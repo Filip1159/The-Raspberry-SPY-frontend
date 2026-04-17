@@ -3,38 +3,24 @@
         <fa-icon [icon]="faBolt" size="3x" color="white" (click)="toggleVisible()" />
     </div>
     @if (isVisible()) {
-        <div class="stats__dropdown">
-            <div class="stats__section">
-                <fa-icon id="icon__cpu" [icon]="faMicrochip" size="2x" />
-                <div class="stats__item">
-                    CPU: {{cpuUsage() ? cpuUsage() + '%' : '-'}}
-                </div>
-                <div class="stats__item">
-                    CPU temperature: {{cpuTemperature() ? cpuTemperature() + '°C' : '-'}}
-                </div>
-                <div class="stats__item">
-                    RAM: {{ramUsage() ? ramUsage() + '%' : '-'}}
-                </div>
-            </div>
-            <div id="vline" class="stats__section"></div>
-            <div class="stats__section">
-                <div>
-                    <fa-icon id="icon__sun" [icon]="faCloud" size="2x" />
-                    <fa-icon id="icon__bluetooth" [icon]="faBluetoothB" size="2x" />
-                </div>
-                <div class="stats__item">
-                    Humidity: {{humidity() ? humidity() + '%' : '-'}}
-                </div>
-                <div class="stats__item">
-                    Temperature: {{temperature() ? temperature() + '°C' : '-'}}
-                </div>
-                <div class="stats__item">
-                    Sensor voltage: {{voltage() ? voltage() + 'V' : '-'}}
-                </div>
-                <div class="stats__item">
-                    Last updated: {{lastUpdated() ?? '-'}}
-                </div>
-            </div>
+    <div class="stats__dropdown">
+        <div class="stats__section">
+            <fa-icon id="icon__cpu" [icon]="faMicrochip" size="2x" />
+            <div class="stats__item">CPU: {{cpuUsage() ? cpuUsage() + '%' : '-'}}</div>
+            <div class="stats__item">CPU temperature: {{cpuTemperature() ? cpuTemperature() + '°C' : '-'}}</div>
+            <div class="stats__item">RAM: {{ramUsage() ? ramUsage() + '%' : '-'}}</div>
         </div>
+        <div id="vline" class="stats__section"></div>
+        <div class="stats__section">
+            <div>
+                <fa-icon id="icon__sun" [icon]="faCloud" size="2x" />
+                <fa-icon id="icon__bluetooth" [icon]="faBluetoothB" size="2x" />
+            </div>
+            <div class="stats__item">Humidity: {{humidity() ? humidity() + '%' : '-'}}</div>
+            <div class="stats__item">Temperature: {{temperature() ? temperature() + '°C' : '-'}}</div>
+            <div class="stats__item">Sensor voltage: {{voltage() ? voltage() + 'V' : '-'}}</div>
+            <div class="stats__item">Last updated: {{lastUpdated() ?? '-'}}</div>
+        </div>
+    </div>
     }
 </div>

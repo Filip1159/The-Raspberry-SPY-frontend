@@ -1,10 +1,9 @@
 .stats {
     display: flex;
     position: relative;
-    
+
     &__tab {
         color: white;
-    
     }
 
     &__dropdown {
@@ -19,13 +18,7 @@
         top: 62px;
         left: -350px;
         z-index: 10;
-        background: repeating-linear-gradient(
-            to right,
-            #fdd,
-            white,
-            #def,
-            white
-        );
+        background: repeating-linear-gradient(to right, #fdd, white, #def, white);
     }
 
     &__section {
@@ -38,8 +31,6 @@
         font-size: 16px;
         width: 180px;
     }
-
-
 }
 
 #icon__cpu {
@@ -51,7 +42,7 @@
 }
 
 #icon__bluetooth {
-    color: #0082FC;
+    color: #0082fc;
 }
 
 #vline {

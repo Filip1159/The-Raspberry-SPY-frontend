@@ -10,7 +10,11 @@ export class SocketService {
     private socket: Socket
 
     constructor() {
-        this.socket = io(env.backendApiUrl)
+        this.socket = io(env.websocketUrl, {
+            path: '/socket.io',
+            transports: ['websocket'],
+            upgrade: false,
+        })
     }
 
     listen<T>(eventName: string): Observable<T> {

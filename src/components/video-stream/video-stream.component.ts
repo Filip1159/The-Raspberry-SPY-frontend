@@ -1,10 +1,11 @@
-import { Component, effect, ElementRef, inject, signal, ViewChild } from '@angular/core'
+import { Component, ElementRef, inject, signal, ViewChild } from '@angular/core'
 import { SocketService } from '../../service/socket.service'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faAngleUp, faArrowsToCircle, faLightbulb } from '@fortawesome/free-solid-svg-icons'
 import { LongPressButton } from './longpress-button/longpress-button.component'
-import { WebRTCService } from '../../service/webrtc.service'
 import { Slider } from './slider/slider'
+import { env } from './../../environment'
+import { AuthService } from '../../service/auth.service'
 
 @Component({
     selector: 'app-video-stream',
@@ -17,8 +18,8 @@ export class VideoStreamComponent {
     @ViewChild('video', { static: false })
     private video!: ElementRef<HTMLVideoElement>
 
+    private auth = inject(AuthService)
     private socket = inject(SocketService)
-    private webrtc = inject(WebRTCService)
 
     faAngleUp = faAngleUp
     faArrowsToCircle = faArrowsToCircle
@@ -27,18 +28,10 @@ export class VideoStreamComponent {
     cameraTurnedOn = signal(false)
     brightness = 100
 
-    constructor() {
-        effect(() => {
-            const stream = this.webrtc.mediaStream()
-            if (stream) {
-                this.video.nativeElement.srcObject = stream
-            }
-            this.cameraTurnedOn.set(this.webrtc.authorized())
-        })
-    }
-
     cameraOn() {
-        this.webrtc.cameraOn()
+        this.video.nativeElement.src = `${env.hlsUrl}/cam1/index.m3u8?jwt=${this.auth.token()}`
+        this.video.nativeElement.onloadeddata = () => this.video.nativeElement.play()
+        this.cameraTurnedOn.set(true)
     }
 
     move(msg: string): void {

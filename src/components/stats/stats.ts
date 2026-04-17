@@ -5,14 +5,14 @@ import { faCloud } from '@fortawesome/free-regular-svg-icons'
 import { faBluetoothB } from '@fortawesome/free-brands-svg-icons'
 import { SocketService } from '../../service/socket.service'
 
-type BleUpdatePayload = {
+interface BleUpdatePayload {
     humidity: number
     temperature: number
     voltage: number
     lastUpdated: string
 }
 
-type SystemStatsUpdatePayload = {
+interface SystemStatsUpdatePayload {
     cpuUsage: number
     cpuTemperature: number
     ramUsage: number
@@ -31,6 +31,7 @@ export class Stats {
     faCloud = faCloud
     faMicrochip = faMicrochip
 
+    private eRef = inject(ElementRef)
     private socketService = inject(SocketService)
 
     isVisible = signal(false)
@@ -44,7 +45,7 @@ export class Stats {
     voltage = signal<number | null>(null)
     lastUpdated = signal<string | null>(null)
 
-    constructor(private eRef: ElementRef) {
+    constructor() {
         effect(() => {
             this.socketService.listen<SystemStatsUpdatePayload>('system_stats_update').subscribe(payload => {
                 this.cpuUsage.set(payload.cpuUsage)

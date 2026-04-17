@@ -1,5 +1,6 @@
 export const env = {
     production: false,
-    backendApiUrl: 'http://10.145.105.190:8080',
-    webrtcUrl: 'http://10.145.105.190:8889',
+    backendApiUrl: 'http://192.168.1.105:8080',
+    websocketUrl: 'http://192.168.1.105:8080',
+    hlsUrl: 'http://192.168.1.105:8888',
 }
