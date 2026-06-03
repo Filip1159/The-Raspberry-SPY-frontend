@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm start *)",
+      "PowerShell(npm run *)",
+      "Bash(npx prettier *)"
+    ]
+  }
+}

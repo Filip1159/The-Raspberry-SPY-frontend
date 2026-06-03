@@ -71,3 +71,66 @@
 #linkedin {
     color: #0077b5;
 }
+
+:host {
+    display: block;
+    overflow-x: hidden;
+    font-family: sans-serif;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+}
+
+.title {
+    margin-bottom: 40px;
+    color: #333;
+}
+
+.box {
+    width: 100%;
+    max-width: 600px;
+    /* height: 25vh oznacza 25% wysokości ekranu. 
+        Dzięki temu na ekranie zawsze będą mieścić się ok. 3-4 ramki, 
+        niezależnie od tego, jak duży masz monitor. */
+    height: 25vh; 
+    margin-bottom: 4vh; 
+    padding: 20px;
+    
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    /* -- KLUCZOWE DLA ANIMACJI -- */
+    /* Stan początkowy: przesunięcie 100% w lewo i niewidoczność */
+    opacity: 0;
+    transform: translateX(-100%);
+    transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Klasa dodawana dynamicznie przez Intersection Observer */
+.box.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Animacja dla elementów tekstu - ramki z testami */
+.aboutMe__slideFromLeft {
+    opacity: 0;
+    transform: translateX(-50px);
+    transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aboutMe__slideFromLeft.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
