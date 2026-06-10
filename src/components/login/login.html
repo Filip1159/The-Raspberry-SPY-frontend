@@ -1,7 +1,9 @@
 <main class="loginPage">
-    <img class="loginPage__logo" src="raspberry-pi.svg" alt="logo" />
+    <div class="loginPage__top">
+        <img class="loginPage__top__logo" src="raspberry-pi.svg" alt="logo" />
+        <span class="loginPage__top__title">Sign in to access ADMIN features</span>
+    </div>
     <div class="loginPage__content">
-        <div class="loginPage__content__title">Sign in to access ADMIN features</div>
         <form class="loginPage__content__form" [formGroup]="form" (submit)="onSubmit()">
             <div class="inputWrapper">
                 <label class="inputWrapper__label" for="username">Username:</label>

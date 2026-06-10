@@ -17,7 +17,6 @@
             flex-direction: column;
             gap: 20px;
             align-items: flex-start;
-            background: #fe8e16;
             border-radius: 14px;
 
             &__title {
@@ -25,6 +24,16 @@
                 font-weight: 700;
                 color: white;
                 padding-left: 10px;
+
+                @media (max-width: 600px) {
+                    display: none;
+                }
+            }
+
+            &__video {
+                width: 720px;
+                max-width: 100%;
+                height: auto;
             }
         }
 
@@ -50,6 +59,11 @@
             grid-template-rows: repeat(3, 1fr);
             column-gap: 20px;
             row-gap: 20px;
+
+            @media (max-width: 600px) {
+                column-gap: 10px;
+                row-gap: 10px;
+            }
         }
 
         @media (max-width: 1200px) {
@@ -59,5 +73,17 @@
         @media (min-width: 1200px) {
             flex-direction: row;
         }
+
+        @media (max-width: 600px) {
+            height: calc(100vh - 160px);
+            padding: 0;
+            background: white;
+            justify-content: space-between;
+            gap: 10px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        margin: 0;
     }
 }

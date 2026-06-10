@@ -46,6 +46,10 @@
                 border-bottom: 6px solid blue;
                 transition: 0.05s;
             }
+
+            @media (max-width: 950px) {
+                font-size: 14px;
+            }
         }
     }
 
@@ -61,5 +65,9 @@
         display: flex;
         align-self: center;
         color: white;
+    }
+
+    @media (max-width: 600px) {
+        display: none;
     }
 }

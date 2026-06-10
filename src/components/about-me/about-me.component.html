@@ -1,16 +1,17 @@
 <main class="aboutMe">
     <div class="aboutMe__content">
-        <h2>Hello on my Raspberrastic website!</h2>
-        <p class="aboutMe__content__paragraph">
+        <h2 class="aboutMe__header slideFromLeft">Hello on my Raspberrastic website!</h2>
+        <img class="aboutMe__img--mobile slideFromLeft" src="me.jpg" alt="Me" height="400" width="300" />
+        <p class="aboutMe__content__paragraph slideFromLeft">
             Hi! You have just made my <span style="color: #c51d4a; font-weight: 700">Raspberry Pi</span> handle some network traffic. <br />
             Thank you! She's so bored, cause nobody ever wants to talk to her...
         </p>
-        <p class="aboutMe__content__paragraph">
+        <p class="aboutMe__content__paragraph slideFromLeft">
             My name is <b>Filip</b> and I'm a 24 year old computer geek and backend developer from Poland. Recently I've had a lot of spare time and I
             finally decided to finish my Raspberry project, which you can see right now. Feel free to leave something behind and send greetings, so
             that I will know anyone visited me &#128075;
         </p>
-        <p class="aboutMe__content__paragraph">
+        <p class="aboutMe__content__paragraph slideFromLeft">
             What you can see has been build in <b>Python (flask)</b> and <b>Angular</b> - and I found it as a nice change from my Java Developer
             routine (you can recognize that the styles were made by the backend dev &#128516;). You can find the source code on my Github
         </p>
@@ -25,7 +26,7 @@
             </div>
         </div>
 
-        <div class="aboutMe__icons">
+        <div class="aboutMe__icons slideFromLeft">
             <a href="https://www.chess.com/member/fifi9811" target="_blank">
                 <fa-icon id="chess" class="aboutMe__icons__icon" [icon]="faChess" size="3x" />
             </a>
@@ -40,5 +41,5 @@
             </a>
         </div>
     </div>
-    <img src="me.jpg" alt="Me" height="400" width="300" />
+    <img class="aboutMe__img" src="me.jpg" alt="Me" height="400" width="300" />
 </main>

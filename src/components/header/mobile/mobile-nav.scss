@@ -1,0 +1,32 @@
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #c51d4a;
+    padding: 10px;
+    z-index: 10;
+
+    &__link {
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: lightgray;
+        align-items: center;
+        gap: 8px;
+
+        &__icon {
+        }
+
+        &__label {
+            font-size: 12px;
+        }
+    }
+
+    @media (min-width: 600px) {
+        display: none;
+    }
+}
