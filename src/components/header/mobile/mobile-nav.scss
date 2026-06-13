@@ -7,7 +7,6 @@
     right: 0;
     bottom: 0;
     background: #c51d4a;
-    padding: 10px;
     z-index: 10;
 
     &__link {
@@ -16,9 +15,15 @@
         text-decoration: none;
         color: lightgray;
         align-items: center;
+        padding: 10px;
         gap: 8px;
 
-        &__icon {
+        &--active {
+            border-bottom: 3px solid lightgray;
+        }
+
+        &__lockIcon--hidden {
+            display: none;
         }
 
         &__label {

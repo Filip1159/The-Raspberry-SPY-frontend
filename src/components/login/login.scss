@@ -48,6 +48,10 @@
             border-radius: 25px;
             background-color: #c51d4a;
             padding: 40px;
+
+            @media (max-width: 600px) {
+                padding: 20px;
+            }
         }
 
         @media (max-width: 600px) {
@@ -74,7 +78,7 @@
         width: 100%;
         font-size: 16px;
         font-weight: 400;
-        padding: 3px 10px;
+        padding: 3px 0;
         border-radius: 5px;
         border: none;
     }

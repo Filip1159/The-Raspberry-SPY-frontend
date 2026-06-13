@@ -8,7 +8,9 @@
     border-radius: 14px;
     color: white;
     font-weight: 700;
-    margin: 10px 30px;
+    margin: 10px auto;
+    width: 95%;
+    max-width: 800px;
 
     &__day {
         font-size: 34px;
@@ -57,6 +59,7 @@
                     color: white;
                     border-top-right-radius: 6px;
                     border-bottom-right-radius: 6px;
+                    padding: 8px 12px;
 
                     &:hover {
                         background-color: rgba($color: black, $alpha: 0.2);
@@ -115,6 +118,10 @@
         &:hover {
             transform: scale(1.1);
         }
+
+        @media (max-width: 600px) {
+            color: #c51d4a;
+        }
     }
 
     @media (min-width: 1000px) {
@@ -123,5 +130,83 @@
 
     @media (max-width: 1000px) {
         width: 640px;
+    }
+
+    @media (max-width: 768px) {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        width: 100%;
+        gap: 0;
+        margin: 0;
+        border-bottom: 3px blue solid;
+        border-radius: 0;
+        background-color: white;
+        width: 100vw;
+
+        &__day {
+            width: auto;
+            font-size: 24px;
+            color: blue;
+            margin-left: 8px;
+        }
+
+        &__settings {
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            width: 250px;
+            padding-right: 0;
+        }
+
+        &__inputWrapper {
+            width: auto;
+            align-items: flex-end;
+            gap: 2px;
+
+            &__label {
+                display: none;
+            }
+        }
+
+        &__input {
+            min-width: 110px;
+            justify-content: center;
+
+            &__value {
+                font-size: 22px;
+                width: 32px;
+            }
+
+            &__buttonsWrapper {
+                flex-direction: row;
+                border-radius: 4px;
+
+                &__button {
+                    flex: 1;
+                    padding: 4px 8px;
+                    border-radius: 2px;
+                    border-right: 1px solid rgba(255, 255, 255, 0.1);
+                }
+            }
+        }
+
+        &__checkbox {
+            width: 28px;
+            height: 28px;
+        }
+
+        &__melodySelect {
+            width: 140px;
+            font-size: 14px;
+            height: 30px;
+        }
+
+        &__melodyPlay {
+            font-size: 1.5rem;
+        }
     }
 }

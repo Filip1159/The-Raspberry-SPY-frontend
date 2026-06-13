@@ -28,6 +28,7 @@ export class Login {
         this.auth.login(username!, password!).subscribe({
             next: res => {
                 this.auth.saveToken(res.access_token)
+                console.log('token saved')
                 this.router.navigate(['/video'])
             },
             error: () => this.error.set('Wrong credentials'),

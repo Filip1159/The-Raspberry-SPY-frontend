@@ -1,7 +1,10 @@
 <main class="alarmManager content">
-    @for (alarm of alarmsSignal(); track alarm.value.day) {
-        <app-alarm [form]="alarm"></app-alarm>
-    }
+    <div class="alarmManager__alarms">
+        @for (alarm of alarmsSignal(); track alarm.value.day) {
+            <app-alarm [form]="alarm"></app-alarm>
+        }
+    </div>
+    
     <div class="alarmManager__buttonWrapper">
         <button class="button" (click)="save()">Save</button>
     </div>

@@ -1,22 +1,31 @@
 <nav class="nav">
-    <a routerLink="/alarm" class="nav__link">
+    <a routerLink="/alarm" class="nav__link" routerLinkActive="nav__link--active">
         <fa-icon class="nav__link__icon" [icon]="faAlarmClock" size="2x" />
-        <span class="nav__link__label">Alarms</span>
+        <div class="nav__link__label">
+            <span>Alarms </span>
+            <fa-icon class="nav__link__lockIcon" [class]="{'nav__link__lockIcon--hidden': auth.isLoggedIn()}" [icon]="faLock" size="xs" />
+        </div>
     </a>
-    <a routerLink="/greetings" class="nav__link">
+    <a routerLink="/greetings" class="nav__link" routerLinkActive="nav__link--active">
         <fa-icon class="nav__link__icon" [icon]="faPaperPlane" size="2x" />
         <span class="nav__link__label">Greetings</span>
     </a>
-    <a routerLink="/video" class="nav__link">
+    <a routerLink="/video" class="nav__link" routerLinkActive="nav__link--active">
         <fa-icon class="nav__link__icon" [icon]="faUserSecret" size="2x" />
-        <span class="nav__link__label">SPY</span>
+        <div class="nav__link__label">
+            <span>SPY </span>
+            <fa-icon class="nav__link__lockIcon" [class]="{'nav__link__lockIcon--hidden': auth.isLoggedIn()}" [icon]="faLock" size="xs" />
+        </div>
     </a>
-    <a routerLink="/" class="nav__link">
+    <a routerLink="/" class="nav__link" routerLinkActive="nav__link--active" [routerLinkActiveOptions]="{exact: true}">
         <fa-icon class="nav__link__icon" [icon]="faCircleInfo" size="2x" />
         <span class="nav__link__label">About me</span>
     </a>
-    <a routerLink="/" class="nav__link">
-        <fa-icon class="nav__link__icon" [icon]="faUser" size="2x" />
-        <span class="nav__link__label">admin</span>
+    <a routerLink="/mobile-stats" class="nav__link" routerLinkActive="nav__link--active">
+        <fa-icon class="nav__link__icon" [icon]="faBarsStaggered" size="2x" />
+        <div class="nav__link__label">
+            <span>Other </span>
+            <fa-icon class="nav__link__lockIcon" [class]="{'nav__link__lockIcon--hidden': auth.isLoggedIn()}" [icon]="faLock" size="xs" />
+        </div>
     </a>
 </nav>

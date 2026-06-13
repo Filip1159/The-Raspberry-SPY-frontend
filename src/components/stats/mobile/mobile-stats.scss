@@ -1,0 +1,45 @@
+.mobileStats {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    &__section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        margin: 8px;
+
+        &__vline {
+            margin: 12px 20px;
+            border: 1px solid lightgray;
+        }
+    }
+
+    &__logout {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        font-size: 20px;
+        color: #c51d4a;
+        margin-top: 30px;
+    }
+}
+
+#icon__cpu {
+    color: #c51d4a;
+    margin: 12px 0;
+}
+
+#icon__sun {
+    display: inline-block;
+    color: #99f;
+    margin: 12px 0;
+}
+
+#icon__bluetooth {
+    display: inline-block;
+    color: #0082fc;
+    margin: 12px 0;
+}

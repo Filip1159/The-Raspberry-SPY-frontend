@@ -3,7 +3,9 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faBolt, faMicrochip } from '@fortawesome/free-solid-svg-icons'
 import { faCloud } from '@fortawesome/free-regular-svg-icons'
 import { faBluetoothB } from '@fortawesome/free-brands-svg-icons'
-import { SocketService } from '../../service/socket.service'
+import { SocketService } from '../../../service/socket.service'
+import { AuthService } from '../../../service/auth.service'
+import { faArrowRightFromBracket } from '@fortawesome/free-solid-svg-icons'
 
 interface BleUpdatePayload {
     humidity: number
@@ -19,19 +21,21 @@ interface SystemStatsUpdatePayload {
 }
 
 @Component({
-    selector: 'stats',
+    selector: 'mobile-stats',
     standalone: true,
     imports: [FontAwesomeModule],
-    templateUrl: './stats.html',
-    styleUrl: './stats.scss',
+    templateUrl: './mobile-stats.html',
+    styleUrl: './mobile-stats.scss',
 })
-export class Stats {
+export class MobileStats {
     faBluetoothB = faBluetoothB
     faBolt = faBolt
     faCloud = faCloud
     faMicrochip = faMicrochip
+    faArrowRightFromBracket = faArrowRightFromBracket
 
     private eRef = inject(ElementRef)
+    private auth = inject(AuthService)
     private socketService = inject(SocketService)
 
     isVisible = signal(false)
@@ -61,14 +65,7 @@ export class Stats {
         })
     }
 
-    toggleVisible(): void {
-        this.isVisible.set(!this.isVisible())
-    }
-
-    @HostListener('document:click', ['$event'])
-    clickout(event: PointerEvent) {
-        if (!this.eRef.nativeElement.contains(event.target)) {
-            this.isVisible.set(false)
-        }
+    logout() {
+        this.auth.logout()
     }
 }

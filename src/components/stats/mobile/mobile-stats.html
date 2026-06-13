@@ -1,0 +1,24 @@
+<div class="mobileStats">
+    <div class="mobileStats__section">
+        <fa-icon id="icon__cpu" [icon]="faMicrochip" size="2x" />
+        <div class="mobileStats__item">CPU: {{cpuUsage() ? cpuUsage() + '%' : '-'}}</div>
+        <div class="mobileStats__item">CPU temperature: {{cpuTemperature() ? cpuTemperature() + '°C' : '-'}}</div>
+        <div class="mobileStats__item">RAM: {{ramUsage() ? ramUsage() + '%' : '-'}}</div>
+    </div>
+    <div class="mobileStats__section__vline"></div>
+    <div class="mobileStats__section">
+        <div>
+            <fa-icon id="icon__sun" [icon]="faCloud" size="2x" />
+            <fa-icon id="icon__bluetooth" [icon]="faBluetoothB" size="2x" />
+        </div>
+        <div class="mobileStats__item">Humidity: {{humidity() ? humidity() + '%' : '-'}}</div>
+        <div class="mobileStats__item">Temperature: {{temperature() ? temperature() + '°C' : '-'}}</div>
+        <div class="mobileStats__item">Sensor voltage: {{voltage() ? voltage() + 'V' : '-'}}</div>
+        <div class="mobileStats__item">Last updated: {{lastUpdated() ?? '-'}}</div>
+    </div>
+    <div class="mobileStats__section__vline"></div>
+    <div class="mobileStats__logout" (click)="logout()">
+        <span>Log out</span>
+        <fa-icon [icon]="faArrowRightFromBracket" size="2x" color="white" />
+    </div>
+</div>
