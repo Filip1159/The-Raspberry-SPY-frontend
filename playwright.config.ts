@@ -12,7 +12,11 @@ export default defineConfig({
         baseURL: 'http://localhost:4200',
         trace: 'retain-on-failure',
     },
-    projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+    projects: [
+        { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /\.mobile\.spec\.ts/ },
+        // phone viewport: the accessibility checks and the phone-only layout tests
+        { name: 'mobile', use: { ...devices['Pixel 7'] }, testMatch: [/a11y\.spec\.ts/, /\.mobile\.spec\.ts/] },
+    ],
     webServer: [
         { command: 'npm run mock-server', url: 'http://localhost:8080/health', reuseExistingServer: !process.env['CI'], timeout: 30_000 },
         {
