@@ -1,6 +1,6 @@
 export const env = {
     production: true,
-    backendApiUrl: 'https://apt-dane-urgently.ngrok-free.app/flask',
-    websocketUrl: 'https://apt-dane-urgently.ngrok-free.app',
-    hlsUrl: 'https://apt-dane-urgently.ngrok-free.app',
+    backendApiUrl: 'https://api.filipwisniewski.pl/flask',
+    websocketUrl: 'https://api.filipwisniewski.pl',
+    hlsUrl: 'https://api.filipwisniewski.pl',
 }

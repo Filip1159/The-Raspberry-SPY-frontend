@@ -9,7 +9,7 @@ Hello! Welcome to my repository containing the Raspberry SPY app frontend - deve
 - adjustable camera backlight
 - "local" interface built with 20x4 LCD display and rotary encoder
 - programmable alarm clock built with a buzzer and 7 built-in melodies
-- Ngrok tunneling. Website available at https://apt-dane-urgently.ngrok-free.app/
+- Hosted on GitHub Pages at https://filipwisniewski.pl/ (backend exposed via Cloudflare Tunnel)
 
 Page unavailable? Oops, I must have switched off my raspberry...
 
@@ -41,7 +41,7 @@ A custom-made 3D printed frame with a tall camera stand. See it in [Makerworld](
 
 :satellite: [Nginx](https://nginx.org/) server configured as a reverse proxy
 
-:earth_africa: [Ngrok](https://ngrok.com/) tunneling to expose the service publicly
+:earth_africa: [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) to expose the backend publicly
 
 ### Gallery 
 <img src="img/img_all.jpg"/>
