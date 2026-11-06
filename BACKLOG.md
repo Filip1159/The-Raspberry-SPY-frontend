@@ -171,7 +171,7 @@ The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pa
 
 - [ ] Replace hardcoded `/home/fwisn/Documents/camera-app/...` paths with a single config module (env vars with sensible defaults); fix the relative `./resources/greetings.json` path.
 - [ ] Remove the committed virtualenv (`bin/`, `lib64`, `pyvenv.cfg`) from git and ignore it; align Python version (`pyproject.toml` says py313, the venv is 3.11).
-- [ ] Run Flask as a `systemd` service (auto start on boot, restart on failure, `journalctl` logs) alongside `cloudflared` and MediaMTX; document it in `configs/CONFIGS.MD`; add a deploy script (`git pull` + restart).
+- [ ] Run the backend (`python main.py`) as a `systemd` service (auto start on boot, restart on failure, `journalctl` logs) alongside `cloudflared` and MediaMTX; document it in `configs/CONFIGS.MD`; add a deploy script (`git pull` + restart).
 - [x] `AlarmManager.reload()` no longer deadlocks when a reload coincides with an alarm ringing: reloads are serialized by their own lock, the old thread is joined **outside** the lock that guards the schedule, and every scheduler thread has its own stop event (regression test `test_reloading_while_an_alarm_is_ringing_does_not_deadlock`, verified to fail on the old code). Matters most for the FastAPI version, where a stuck reload would hold a worker thread of the pool.
 - [ ] Make the BLE thread robust (a malformed packet raises in `__parse_response` and should not break the loop), and expose "stale" data (>N min old) to the UI.
 - [ ] Replace `os.system('... sudo tee ...')` for the ACT LED with a udev/group-permission approach or `gpiozero`/sysfs write without sudo.
@@ -179,15 +179,15 @@ The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pa
 - [ ] Remove dead commented-out code in `gpio.py`; `logging` instead of `print`.
 - [x] Greetings and alarms JSON writes (HTTP) are locked and atomic (`app/json_store.py`); `AlarmManager.save_day` (LCD) still writes directly.
 
-### E5. Backend: move from Flask to FastAPI [BE] (in progress)
+### E5. Backend: move from Flask to FastAPI [BE] ✅ done (follow-ups open)
 
 Decision: rewrite the backend with FastAPI in the same repo, keeping the API contract unchanged so the frontend needs no change.
 
 - [x] Side-by-side implementation in `app/api/` (REST routers, RS256 JWT dependency, rate limits with the `limits` library, Socket.IO through python-socketio's ASGI app, lifespan that starts the hardware), entry point `main_fastapi.py`, shared validation in `app/validation.py` (also used by Flask), 57 new tests (122 total) that mirror the Flask tests, smoke-tested with the real JavaScript socket.io client (handshake auth, controls, stats broadcast).
 - [x] Cutover prepared: `python main.py` is the FastAPI app (the Flask version stays as `main_flask.py` for rollback), nginx serves `/api` and the old `/flask` alias, the frontend calls `/api`, docs updated (`configs/CONFIGS.MD` has the Pi steps). Deploy order: backend + nginx on the Pi first, then the frontend.
 - [ ] Verify on the Raspberry for real (`git pull`, `pip install -r requirements-raspberry.txt`, `python main.py`): nothing hardware-related could be exercised off the Pi (uvicorn + LCD thread + GPIO + BLE thread together, `asyncio.to_thread` for servos).
-- [ ] After a quiet period on the Pi: delete the Flask fallback (`main_flask.py`, `app/server.py`, `app/controller/`, `app/rate_limit.py`, Flask requirements and tests) and the `/flask` alias in nginx; add `/api/...` to the Cloudflare rate-limiting rule (manual).
-- [ ] Contract test (see E4): run the same request script against Flask, FastAPI and `mock-server`.
+- [x] Flask removed (`main_flask.py`, `app/server.py`, `app/controller/`, `app/rate_limit.py`, Flask requirements, Flask-only tests, the `/flask` nginx alias): 89 tests, `requirements.txt` now lists only direct dependencies. Manual: add `/api/login` and `/api/greetings` to the Cloudflare rate-limiting rule if not done, and copy the new `configs/default` to the Pi (drops the `/flask` alias; not urgent).
+- [ ] Contract test (see E4): run the same request script against the FastAPI backend (fake mode) and `mock-server`.
 - [ ] Move the import-time singletons (`alarm_manager`, `melody_player`, `servos_controller`) into the FastAPI lifespan / dependency injection, so the E3 deadlock fix and test isolation get easier.
 - [ ] Use FastAPI's strengths after the cutover: typed Pydantic models + OpenAPI as the contract (generate the Angular API client or `openapi.yaml` for the mock), `/docs` behind login, async-friendly stats history (E3/P2). Note: Pydantic validation would change error bodies from 400 `{'error'}` to 422; decide together with the frontend.
 - [ ] systemd unit for uvicorn (E3) and `API_DOCS=0` in production (default on the Pi).
