@@ -2,7 +2,6 @@ import { Component, inject, Input } from '@angular/core'
 import { FormGroup } from '@angular/forms'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
-import { AuthService } from '../../../service/auth.service'
 import { BACKEND_OFFLINE_MESSAGE, BackendStatusService, isBackendUnreachable } from '../../../service/backend-status.service'
 import { RaspberryApi } from '../../../service/raspberry.api'
 import { ToastService } from '../../../service/toast.service'
@@ -18,7 +17,6 @@ export class AlarmComponent {
     faPlay = faPlay
 
     private api = inject(RaspberryApi)
-    private auth = inject(AuthService)
     private toasts = inject(ToastService)
     backendStatus = inject(BackendStatusService)
 
@@ -54,7 +52,7 @@ export class AlarmComponent {
 
     play(): void {
         const melody = this.form.value.melody
-        this.api.playMelody(this.auth.token()!, melody).subscribe({
+        this.api.playMelody(melody).subscribe({
             next: () => this.toasts.info(`Playing "${melody}" on the Raspberry`),
             error: err => this.toasts.error(isBackendUnreachable(err) ? BACKEND_OFFLINE_MESSAGE : 'The melody could not be played.'),
         })

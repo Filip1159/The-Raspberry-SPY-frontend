@@ -8,13 +8,8 @@
         [attr.maxlength]="maxLength"
         [formControl]="form.controls.text"></textarea>
     <div class="greetings__footer">
-        <span class="greetings__counter" [class.greetings__counter--limit]="form.controls.text.value.length >= maxLength">
-            {{ form.controls.text.value.length }}/{{ maxLength }}
-        </span>
-        <button
-            class="button"
-            type="submit"
-            [disabled]="form.controls.text.value.trim() === '' || form.invalid || sending() || backendStatus.isOffline()">
+        <span class="greetings__counter" [class.greetings__counter--limit]="text().length >= maxLength"> {{ text().length }}/{{ maxLength }} </span>
+        <button class="button" type="submit" [disabled]="text().trim() === '' || text().length > maxLength || sending() || backendStatus.isOffline()">
             {{ sending() ? 'Sending...' : 'Send' }}
             <fa-icon [icon]="faPaperPlane" size="sm" />
         </button>

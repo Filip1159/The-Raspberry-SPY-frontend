@@ -106,8 +106,8 @@ export class VideoStreamComponent implements OnDestroy {
         if (!direction || event.ctrlKey || event.metaKey || event.altKey || !this.canControl()) return
 
         // leave the keys alone while a form control (the brightness slider) has the focus
-        const target = event.target as HTMLElement
-        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return
+        const target = event.target as HTMLElement | null
+        if (target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return
 
         event.preventDefault()
         const now = Date.now()

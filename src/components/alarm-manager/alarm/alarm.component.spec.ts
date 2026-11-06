@@ -1,3 +1,4 @@
+import {} from 'vitest'
 import { provideHttpClient } from '@angular/common/http'
 import { provideHttpClientTesting } from '@angular/common/http/testing'
 import { ComponentFixture, TestBed } from '@angular/core/testing'
@@ -43,6 +44,6 @@ describe('AlarmComponent', () => {
     it('toggles the alarm', () => {
         component.toggleEnabled()
 
-        expect(component.form.value.enabled).toBeFalse()
+        expect(component.form.value.enabled).toBe(false)
     })
 })

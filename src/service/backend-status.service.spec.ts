@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { TestBed } from '@angular/core/testing'
@@ -22,13 +23,13 @@ describe('BackendStatusService', () => {
     })
 
     afterEach(() => {
-        jasmine.clock().uninstall()
+        vi.useRealTimers()
         httpMock.verify()
     })
 
     it('starts in the checking state', () => {
         expect(service.status()).toBe('checking')
-        expect(service.isOffline()).toBeFalse()
+        expect(service.isOffline()).toBe(false)
     })
 
     it('is online after a successful health check', () => {
@@ -42,27 +43,27 @@ describe('BackendStatusService', () => {
         service.check()
         httpMock.expectOne(healthUrl).flush(null, { status: 502, statusText: 'Bad Gateway' })
 
-        expect(service.isOffline()).toBeTrue()
+        expect(service.isOffline()).toBe(true)
     })
 
     it('is offline on a network error', () => {
         service.check()
         httpMock.expectOne(healthUrl).error(new ProgressEvent('error'))
 
-        expect(service.isOffline()).toBeTrue()
+        expect(service.isOffline()).toBe(true)
     })
 
     it('retries automatically while offline and recovers', () => {
-        jasmine.clock().install()
+        vi.useFakeTimers()
         service.check()
         httpMock.expectOne(healthUrl).flush(null, { status: 530, statusText: 'Origin unreachable' })
-        expect(service.isOffline()).toBeTrue()
+        expect(service.isOffline()).toBe(true)
 
-        jasmine.clock().tick(15000)
+        vi.advanceTimersByTime(15000)
         httpMock.expectOne(healthUrl).flush({ status: 'ok' })
 
         expect(service.status()).toBe('online')
-        jasmine.clock().tick(60000)
+        vi.advanceTimersByTime(60000)
         httpMock.expectNone(healthUrl)
     })
 
@@ -81,7 +82,7 @@ describe('BackendStatusService', () => {
             http.get(`${env.backendApiUrl}/alarms`).subscribe({ error: () => undefined })
             httpMock.expectOne(`${env.backendApiUrl}/alarms`).flush(null, { status: 503, statusText: 'Service Unavailable' })
 
-            expect(service.isOffline()).toBeTrue()
+            expect(service.isOffline()).toBe(true)
         })
 
         it('marks the backend online after any successful API call', () => {

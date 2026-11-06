@@ -2,7 +2,6 @@ import { Component, effect, HostListener, inject, OnInit, signal, untracked } fr
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms'
 import { AlarmComponent } from './alarm/alarm.component'
-import { AuthService } from '../../service/auth.service'
 import { Alarm, RaspberryApi } from '../../service/raspberry.api'
 import { BACKEND_OFFLINE_MESSAGE, BackendStatusService, isBackendUnreachable } from '../../service/backend-status.service'
 import { ToastService } from '../../service/toast.service'
@@ -17,7 +16,6 @@ import { HasUnsavedChanges } from '../../service/unsaved-changes.guard'
 })
 export class AlarmManagerComponent implements OnInit, HasUnsavedChanges {
     private api = inject(RaspberryApi)
-    private auth = inject(AuthService)
     private formBuilder = inject(FormBuilder)
     private toasts = inject(ToastService)
     backendStatus = inject(BackendStatusService)
@@ -54,7 +52,7 @@ export class AlarmManagerComponent implements OnInit, HasUnsavedChanges {
     loadAlarms(): void {
         this.loading.set(true)
         this.loadError.set(null)
-        this.api.getAlarms(this.auth.token()!).subscribe({
+        this.api.getAlarms().subscribe({
             next: res => {
                 this.setAlarms(res)
                 this.loading.set(false)
@@ -93,7 +91,7 @@ export class AlarmManagerComponent implements OnInit, HasUnsavedChanges {
         }
 
         this.saving.set(true)
-        this.api.saveAlarms(this.auth.token()!, this.alarms.value).subscribe({
+        this.api.saveAlarms(this.alarms.value).subscribe({
             next: () => {
                 this.saving.set(false)
                 this.savedAlarms = this.alarms.value

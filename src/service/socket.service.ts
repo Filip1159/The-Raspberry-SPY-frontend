@@ -1,9 +1,15 @@
-import { effect, inject, Injectable, signal } from '@angular/core'
-import { io, Socket } from 'socket.io-client'
+import { effect, inject, Injectable, InjectionToken, signal } from '@angular/core'
+import { io, ManagerOptions, Socket, SocketOptions } from 'socket.io-client'
 import { Observable } from 'rxjs'
 import { env } from './../environment'
 import { AuthService } from './auth.service'
 import { BackendStatusService } from './backend-status.service'
+
+/** Creates the socket; replaced in tests so that no real connection is opened */
+export const SOCKET_FACTORY = new InjectionToken<(url: string, options: Partial<ManagerOptions & SocketOptions>) => Socket>('SOCKET_FACTORY', {
+    providedIn: 'root',
+    factory: () => io,
+})
 
 @Injectable({
     providedIn: 'root',
@@ -13,7 +19,7 @@ export class SocketService {
     private backendStatus = inject(BackendStatusService)
 
     // The backend requires a valid JWT in the handshake. The socket stays disconnected until the user is logged in
-    private socket: Socket = io(env.websocketUrl, {
+    private socket: Socket = inject(SOCKET_FACTORY)(env.websocketUrl, {
         path: '/socket.io',
         transports: ['websocket'],
         upgrade: false,

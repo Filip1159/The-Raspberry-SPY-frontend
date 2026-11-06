@@ -1,8 +1,8 @@
+import { vi } from 'vitest'
 import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { env } from '../../environment'
-import { AuthService } from '../../service/auth.service'
 import { AlarmManagerComponent } from './alarm-manager.component'
 
 describe('AlarmManagerComponent', () => {
@@ -16,7 +16,7 @@ describe('AlarmManagerComponent', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [AlarmManagerComponent],
-            providers: [provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: { token: () => 'token' } }],
+            providers: [provideHttpClient(), provideHttpClientTesting()],
         }).compileComponents()
 
         httpMock = TestBed.inject(HttpTestingController)
@@ -29,19 +29,19 @@ describe('AlarmManagerComponent', () => {
     afterEach(() => httpMock.verify())
 
     it('loads the alarms and starts without unsaved changes', () => {
-        expect(component.loading()).toBeFalse()
+        expect(component.loading()).toBe(false)
         expect(component.alarmsSignal().length).toBe(2)
-        expect(component.hasUnsavedChanges()).toBeFalse()
+        expect(component.hasUnsavedChanges()).toBe(false)
     })
 
     it('detects an edit and a change that is reverted', () => {
         const monday = component.alarmsSignal()[0]
 
         monday.patchValue({ hour: 6 })
-        expect(component.hasUnsavedChanges()).toBeTrue()
+        expect(component.hasUnsavedChanges()).toBe(true)
 
         monday.patchValue({ hour: 7 })
-        expect(component.hasUnsavedChanges()).toBeFalse()
+        expect(component.hasUnsavedChanges()).toBe(false)
     })
 
     it('discards the changes', () => {
@@ -50,7 +50,7 @@ describe('AlarmManagerComponent', () => {
         component.discard()
 
         expect(component.alarmsSignal()[1].value).toEqual(alarms[1])
-        expect(component.hasUnsavedChanges()).toBeFalse()
+        expect(component.hasUnsavedChanges()).toBe(false)
     })
 
     it('saves the alarms and clears the unsaved state', () => {
@@ -62,16 +62,17 @@ describe('AlarmManagerComponent', () => {
         expect(JSON.parse(request.request.body)[0].minute).toBe(30)
         request.flush(null, { status: 201, statusText: 'Created' })
 
-        expect(component.saving()).toBeFalse()
-        expect(component.hasUnsavedChanges()).toBeFalse()
+        expect(component.saving()).toBe(false)
+        expect(component.hasUnsavedChanges()).toBe(false)
     })
 
     it('keeps the unsaved state when saving fails', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined) // the component logs the failure
         component.alarmsSignal()[0].patchValue({ minute: 30 })
 
         component.save()
         httpMock.expectOne(alarmsUrl).flush(null, { status: 500, statusText: 'Server Error' })
 
-        expect(component.hasUnsavedChanges()).toBeTrue()
+        expect(component.hasUnsavedChanges()).toBe(true)
     })
 })

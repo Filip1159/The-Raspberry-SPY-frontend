@@ -1,40 +1,113 @@
-name: CI
+name: CI and deploy
 
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
+    workflow_dispatch:
+
+permissions:
+    contents: read
 
 jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
+    verify:
+        name: Lint, test, build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-    strategy:
-      matrix:
-        node-version: [22]
+            - name: Use Node.js 22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
+            - name: Lint
+              run: npm run lint
 
-      - name: Install dependencies
-        run: npm ci
+            # Vitest in jsdom: no browser needed. Fails below the coverage thresholds in angular.json
+            - name: Unit tests with coverage
+              run: npm run test:ci
 
-      - name: Install Chromium
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
-        continue-on-error: true
+            - name: Upload the coverage report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: coverage
+                  path: coverage
+                  if-no-files-found: ignore
 
-      - name: Lint
-        run: npm run lint
+            - name: Build and pre-render
+              run: npm run build -- --base-href /
 
-      - name: Test
-        run: npm test -- --browsers=ChromeHeadlessCI --watch=false
+            - name: Check the build output
+              run: npm run check:build
+
+            # The pre-rendered index.html is the portfolio; unknown paths (/login, /app/*) get the client-side shell instead.
+            # GitHub Pages serves 404.html for them (with a 404 status, which is fine because those pages are noindex).
+            - name: SPA fallback for deep links
+              run: cp dist/raspberry-ui/browser/index.csr.html dist/raspberry-ui/browser/404.html
+
+            - name: Upload the Pages artifact
+              if: github.event_name != 'pull_request'
+              uses: actions/upload-pages-artifact@v3
+              with:
+                  path: dist/raspberry-ui/browser
+
+    e2e:
+        name: End-to-end tests
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Use Node.js 22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Chromium for Playwright
+              run: npx playwright install --with-deps chromium
+
+            # Starts mock-server/ and `ng serve --configuration mock` itself (see playwright.config.ts)
+            - name: Playwright tests
+              run: npm run e2e
+
+            - name: Upload the Playwright report
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-report
+                  path: |
+                      playwright-report
+                      test-results
+                  if-no-files-found: ignore
+
+    deploy:
+        name: Deploy to GitHub Pages
+        needs: [verify, e2e]
+        # Only the master branch is deployed, and only when lint, unit tests, the build check and the end-to-end tests passed
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        runs-on: ubuntu-latest
+        permissions:
+            pages: write
+            id-token: write
+        concurrency:
+            group: pages
+            cancel-in-progress: true
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4

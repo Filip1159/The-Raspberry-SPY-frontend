@@ -10,7 +10,8 @@ Shared backlog for both repos (`The-Raspberry-SPY-frontend` and `The-Raspberry-S
 4. ✅ SEO (F3)
 5. ✅ B3 (backend hardening)
 6. ✅ Design pass (F2)
-7. **Next:** E1 (make the frontend tests run in CI), E2/E3 cleanups, then P2 ideas
+7. ✅ E1 (tests and CI)
+8. **Next:** E2/E3 cleanups, then P2 ideas
 
 ---
 
@@ -139,18 +140,29 @@ The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pa
 
 ## P1 – engineering health
 
-### E1. Tests and CI [FE][BE]
+### E1. Tests and CI [FE][BE] ✅ implemented (E2E and thresholds pending)
 
-- [ ] FE: the test setup is broken, so CI's test step has never run (lint failed first). `ng test` uses the legacy `@angular-devkit/build-angular:karma` builder without the `main` entry it needs, so Karma starts but finds 0 specs, and `karma.conf.js` lists `kjhtml` as a framework (it is only a reporter) -> `No provider for "framework:kjhtml"`. Verified workaround: switch the `test` target to `@angular/build:unit-test` with `runner: "karma"`, `buildTarget: "::development"`, `tsConfig: "tsconfig.spec.json"` and `browsers: ["ChromeHeadless"]` (it discovers `*.spec.ts` by itself; custom launchers from `karma.conf.js` are not picked up, so CI needs `ChromeHeadless` with `--no-sandbox` via a `karmaConfig`, or Vitest instead – see the stack discussion). With it, 14 specs run: 2 pre-existing failures remain – `HeaderComponent` (no router providers) and `AlarmComponent` (no form passed).
-- [ ] FE: add specs for `AuthService` (expiry/logout), `authGuard`, the new interceptor and `BackendStatusService`, alarm manager; currently only header, login, video-stream and alarm have specs.
-- [ ] FE: `ci.yml` also runs `npm run build`; make `deploy.yml` depend on a green CI (or merge them); add Dependabot for npm + GitHub Actions.
-- [ ] BE: add `pytest` with the hardware layer behind an interface/fakes so `alarm_manager`, controllers (Flask test client) and JWT/CORS behavior can be tested without a Pi; run `ruff` + tests in GitHub Actions.
+- [x] FE: the test runner works. `ng test` now uses `@angular/build:unit-test` with the Karma runner and `runnerConfig: karma.conf.js` (fixed: no `kjhtml`, a `ChromeHeadlessCI` launcher with `--no-sandbox`); `npm run test:ci` runs everything once with a coverage summary. The old `build-angular:karma` target never found a single spec.
+- [x] FE: 92 specs (was 4, two of them failing), 86% line coverage: `AuthService` (token expiry, warning toast, logout), `authGuard`, `RaspberryApi`, backend status service + interceptor, stats/theme/toast/SEO services, route table (guard, legacy redirects, noindex, titles), login (every error path), greetings, portfolio, stream page (keyboard steering, disabled controls, error state), alarm manager (dirty/discard/save/failed save), alarm card, toasts, theme toggle.
+- [x] FE: one pipeline in `ci.yml`: lint, tests with coverage artifact, production build with pre-rendering, `scripts/check-build.mjs` (fails when the portfolio is not pre-rendered or CNAME/robots/sitemap/meta tags are missing), then the Pages deploy **only if everything passed** (`deploy.yml` removed). Dependabot for npm (Angular packages grouped) and Actions.
+- [x] BE: pytest suite (65 tests: API, JWT/CORS, socket auth, security, hardware fakes, scheduler) and a CI workflow with ruff, pytest and a coverage report (79%, the Pi-only `hardware/raspberry.py` is excluded); Dependabot for pip and Actions.
+- **Bugs the new tests found and fixed:**
+    - The scheduler ignored the `enabled` flag, so alarms switched **off** still rang.
+    - An empty alarm list (or none enabled) crashed `AlarmManager` at import, which would have stopped the whole backend from starting. No thread waits now when nothing is enabled; entries without the flag keep ringing.
+    - `GreetingsComponent`'s counter and Send button did not refresh after programmatic changes (zoneless change detection); it now reads a signal.
+    - The key handler of the stream page crashed on events without a target.
+- [ ] First CI run on GitHub: the workflow was validated locally (same commands, YAML parsed) but never ran on a hosted runner; check the first run, especially headless Chrome and the Pages artifact upload.
+- [x] FE: `SocketService` is tested (token-driven connect, handshake auth, `unauthorized` logout, offline probing, emit guard; the socket comes from an injectable `SOCKET_FACTORY`) and `karma.conf.js` enforces coverage thresholds (80% statements/lines, 70% branches, 72% functions; now 86/89/73/75). Open: BE threshold, tests for `mock-server`.
+- [x] FE: Playwright E2E suite (14 tests, ~7 s locally, `npm run e2e`) against the mock server: portfolio offline, theme persistence, login/logout/guard, wrong password, 429, session reload, stats over the socket, alarm save/discard, camera controls, offline banner and recovery. Own `e2e` job in CI; deploy waits for it. Open: screenshot comparisons (need a pinned Linux runner image for stable baselines), a mobile viewport project, axe checks.
+- [ ] Contract test between `mock-server` and the real backend in fake mode (see E4).
+- [x] Karma/Jasmine replaced by Vitest + jsdom (`runner: vitest` in `angular.json`): the suite runs in ~2 s without a browser; `karma*`, `jasmine*` and `@angular-devkit/build-angular` are gone (the app builds with `@angular/build`). Coverage thresholds moved to `coverageThresholds` in `angular.json` (v8 numbers: 82% statements, 80% lines, 86% branches, 83% functions).
+- [ ] BE: run the suite on Python 3.13 as well as 3.11, and add tests that mock `gpiozero`/`RPLCD` to cover `hardware/raspberry.py`.
 
 ### E2. Frontend cleanups [FE]
 
-- [ ] Add an `HttpInterceptorFn` that attaches the bearer token and handles 401 (logout) – remove the per-call `Authorization` headers in `raspberry.api.ts`.
-- [ ] `Stats` subscribes inside an `effect()` and never unsubscribes; move to `toSignal`/`takeUntilDestroyed` and share the socket streams via the service.
-- [ ] Dev ergonomics: `npm start` is hardcoded to `192.168.1.105`; make the dev host configurable (proxy config or env), and document how to run against the Pi (`EXTRA_ALLOWED_ORIGINS` on the backend).
+- [x] `authInterceptor` attaches the bearer token and signs the user out on 401 (with a toast); `RaspberryApi` no longer takes tokens (spec added).
+- [x] Stats subscriptions live in the root `StatsService` (one subscription per event for the app's lifetime, signals for the page); the old `effect()` subscriptions are gone.
+- [x] `npm start` serves on localhost (no hardcoded host); running against the Pi is documented in `AGENTS.md`. Still open: the Pi's LAN IP stays in `environment.ts`.
 - [ ] Unify file naming (`*.component.ts` vs plain names) and selectors; update README (still has old structure/links).
 - [ ] Don't pass the JWT in a query string longer than necessary: investigate MediaMTX `authHTTP`/short-lived stream tokens or cookie-based auth for HLS (the long-lived token currently appears in URLs and could end up in logs).
 
@@ -159,6 +171,7 @@ The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pa
 - [ ] Replace hardcoded `/home/fwisn/Documents/camera-app/...` paths with a single config module (env vars with sensible defaults); fix the relative `./resources/greetings.json` path.
 - [ ] Remove the committed virtualenv (`bin/`, `lib64`, `pyvenv.cfg`) from git and ignore it; align Python version (`pyproject.toml` says py313, the venv is 3.11).
 - [ ] Run Flask as a `systemd` service (auto start on boot, restart on failure, `journalctl` logs) alongside `cloudflared` and MediaMTX; document it in `configs/CONFIGS.MD`; add a deploy script (`git pull` + restart).
+- [ ] `AlarmManager.reload()` joins the waiting thread while holding the lock that the thread itself takes after an alarm rang; a reload at that exact moment can deadlock. Use a timeout or restructure.
 - [ ] Make the BLE thread robust (a malformed packet raises in `__parse_response` and should not break the loop), and expose "stale" data (>N min old) to the UI.
 - [ ] Replace `os.system('... sudo tee ...')` for the ACT LED with a udev/group-permission approach or `gpiozero`/sysfs write without sudo.
 - [ ] Finish or remove the draft Arduino Uno R4 websocket manager (`websocket_manager.py`); `send()` is currently broken (`connected_device.send` is not awaited).
@@ -191,7 +204,7 @@ Fresh clone on any machine: the backend runs with simulated hardware and the UI 
 - [x] Stream page in mock mode shows a generated test pattern (lazy-loaded `mock-camera.ts`) instead of HLS.
 - [x] Failure simulation through `POST /__mock/config` (`offline`, `latencyMs`, `failWith`), documented in `AGENTS.md`; `offline` drops sockets abruptly like a dead Pi.
 - [ ] Contract in one place: `openapi.yaml` for REST plus a socket events section, and a contract test that runs the mock server and the real backend (fake mode) against the same requests.
-- [ ] Add the mock server and a few Playwright flows to CI (login, alarms, offline banner) – ties in with E1. The flow was verified manually with a headless-Chrome script (login, wrong password, stats, camera, alarms, offline banner and recovery) against both the mock server and the fake-mode backend.
+- [x] Mock server and Playwright flows run in CI (E1). The flow was verified manually with a headless-Chrome script (login, wrong password, stats, camera, alarms, offline banner and recovery) against both the mock server and the fake-mode backend.
 
 **Acceptance criteria – verified:** `pip install -r requirements.txt` + `python scripts/dev_setup.py` + `python main.py --fake` starts the backend on a laptop; `npm ci && npm run start:mock` starts the UI, and login, alarms, stats, camera controls and the offline simulation work; the UI also works against the fake-mode backend. Behavior on the real Pi should be unchanged but is unverified until the next deploy.
 
@@ -207,5 +220,4 @@ Fresh clone on any machine: the backend runs with simulated hardware and the UI 
 - [ ] **Multi-user roles**: admin vs read-only viewer; per-user stream permission in the JWT `mediamtx_permissions`.
 - [ ] **Blog / project write-ups** section on the portfolio (Markdown content, prerendered) – also good for SEO.
 - [ ] **i18n**: Polish + English.
-- [ ] **E2E tests**: Playwright against a mocked API for the main flows (login, alarms, offline banner).
 - [ ] **Status page**: public `status` section on the portfolio fed by `/health` (online/offline, uptime).

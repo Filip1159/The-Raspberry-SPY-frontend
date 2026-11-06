@@ -23,19 +23,19 @@ export class RaspberryApi {
         return this.http.post<LoginResponse>(`${env.backendApiUrl}/login`, { username, password })
     }
 
-    getAlarms(token: string): Observable<Alarm[]> {
-        return this.http.get<Alarm[]>(`${env.backendApiUrl}/alarms`, { headers: { Authorization: `Bearer ${token}` } })
+    getAlarms(): Observable<Alarm[]> {
+        return this.http.get<Alarm[]>(`${env.backendApiUrl}/alarms`)
     }
 
-    saveAlarms(token: string, alarms: Alarm[]): Observable<void> {
+    saveAlarms(alarms: Alarm[]): Observable<void> {
         return this.http.post<void>(`${env.backendApiUrl}/alarms`, JSON.stringify(alarms), {
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' },
         })
     }
 
-    playMelody(token: string, melody: string): Observable<void> {
+    playMelody(melody: string): Observable<void> {
         return this.http.post<void>(`${env.backendApiUrl}/alarms/play`, JSON.stringify({ melody }), {
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' },
         })
     }
 

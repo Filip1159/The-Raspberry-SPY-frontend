@@ -10,19 +10,22 @@ Backend repo: `../The-Raspberry-SPY-backend` (Python/Flask). Planned work lives 
 - **The production build pre-renders the public portfolio** (`outputMode: static` + `prerender` in the `production` configuration, `@angular/ssr`): `dist/raspberry-ui/browser/index.html` is the finished portfolio page, `index.csr.html` is the client-only shell used for `/login` and `/app/*`. Dev and mock builds are client-only. Hydration is enabled.
 - TypeScript strict (`strictTemplates`, `noPropertyAccessFromIndexSignature`), SCSS, FontAwesome icons.
 - `socket.io-client` (websocket transport only) for live data and camera controls; `HttpClient` for REST; plain `<video src>` for HLS (native browser playback, no hls.js).
-- Tests: Karma + Jasmine (`ng test`). Lint: angular-eslint + prettier via eslint (`ng lint`).
+- Tests: Vitest specs (globals, jsdom) run through the `@angular/build:unit-test` builder (`runner: vitest`, `setupFiles: src/test-setup.ts` stubs `matchMedia`; coverage with v8). End-to-end: Playwright. Lint: angular-eslint + prettier via eslint (`ng lint`).
 
 ## Commands
 
 ```bash
 npm ci
-npm start          # ng serve on 192.168.1.105 (hardcoded LAN IP of the dev machine – edit if needed), talks to the Pi
+npm start          # ng serve on localhost:4200 against the Pi at the LAN IP in src/environment.ts (edit it if the Pi's address changes; start the backend with EXTRA_ALLOWED_ORIGINS=http://localhost:4200; add `-- --host 0.0.0.0` to serve the UI on the LAN)
 npm run start:mock # no Raspberry needed: mock backend (mock-server/, :8080) + ng serve --configuration mock (:4200). Login demo / demo
 npm run start:ui   # only the UI in the mock configuration, e.g. against the real backend started with `python main.py --fake`
 npm run build      # production build + pre-rendering -> dist/raspberry-ui/browser (index.html = portfolio, index.csr.html = SPA shell, copied to 404.html by deploy.yml)
 npm run lint       # must pass, CI fails otherwise
 npm run format     # prettier --write .
-npm test -- --browsers=ChromeHeadlessCI --watch=false
+npm test           # unit tests in watch mode
+npm run test:ci    # what CI runs: once, with a coverage summary (coverage/ has the HTML report)
+npm run e2e        # Playwright end-to-end tests (starts mock-server + `ng serve --configuration mock` itself, reuses them when running; first time: `npx playwright install chromium`)
+npm run check:build # sanity check of dist/ after `npm run build` (pre-rendered portfolio, CNAME, robots, sitemap, ...)
 ```
 
 ## Routes
@@ -54,9 +57,10 @@ src/
     toasts/  theme-toggle/  sparkline/   # small shared UI pieces
     login/  greetings/ (embedded widget, not a page)  alarm-manager/ (+ alarm/)  video-stream/ (+ slider, longpress-button, mock-camera)  stats/ (stats-page)
   service/
+    auth.interceptor.ts   # adds `Authorization: Bearer` to protected backend calls (not /login, /health, POST /greetings); a 401 signs the user out with a toast
     auth.service.ts       # JWT in localStorage ('jwt'), expiry timers (warning toast 15 s before)
     auth.guard.ts, unsaved-changes.guard.ts
-    raspberry.api.ts      # all REST calls; token passed manually per call (no interceptor)
+    raspberry.api.ts      # all REST calls; no token handling here, `authInterceptor` adds it
     socket.service.ts     # single socket.io connection, listen<T>() returns Observable, `connected` signal
     stats.service.ts      # live system/climate values + 60-sample history (created by AppShell)
     backend-status.service.ts / .interceptor.ts   # online/offline detection for the Raspberry (see Gotchas)
@@ -109,3 +113,11 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 - Fonts (Roboto 400/700, latin and latin-ext for the Polish letters) are self-hosted through `@fontsource/roboto` entries in `angular.json` `styles`; do not add Google Fonts links back.
 - Dark mode: CSS variables switch through `prefers-color-scheme` unless the visitor picked a theme (`data-theme` on `<html>`, applied by an inline script in `index.html` before the first paint). `ThemeToggle` resolves its icon after hydration because the pre-rendered page cannot know the theme.
 - The stream page needs `SocketService.connected` and `BackendStatusService` to enable the steering controls; keyboard control (arrows, C) is handled in `VideoStreamComponent`.
+
+## Tests and CI
+
+- Specs live next to the code (`*.spec.ts`), 90+ of them: services (auth expiry timers, backend status, stats history, theme, toasts, SEO, API calls), guards, the route table (redirects, guards, noindex), and the main components (login, greetings, portfolio, stream page keyboard control, alarms unsaved-changes flow). Write a spec for new logic; use `HttpTestingController` for HTTP, `vi.useFakeTimers()` / `vi.advanceTimersByTime()` for timers, `vi.fn()` / `vi.spyOn()` for spies (import `vi` from `vitest`), and stub `SocketService` (`{ connected: signal(true), emit, listen }`) instead of opening a socket (its own spec replaces `SOCKET_FACTORY`). `test:ci` fails when coverage drops below the thresholds in `angular.json` (`coverageThresholds`).
+- **Zoneless pitfall**: templates must read signals (or state changed by DOM events). A plain `FormControl.value` changed from code does not refresh the view; wrap it with `toSignal(control.valueChanges, ...)` (see `GreetingsComponent`).
+- `.github/workflows/ci.yml` is one pipeline: `verify` (npm ci, lint, `test:ci`, build with pre-rendering, `check:build`, 404.html fallback) and `deploy` (GitHub Pages) which `needs: [verify, e2e]` and runs only for pushes to `master`. Pull requests run `verify` only. Never deploy from another workflow.
+- End-to-end tests (`e2e/*.spec.ts`, config `playwright.config.ts`) drive the real UI in Chromium against the mock server: portfolio without backend, theme, login/logout, wrong password, 429, redirects, stats from the socket, alarm edit/save/discard, offline banner and recovery. They change the mock's state, so they run serially and `e2e/fixtures.ts` resets the failure simulation around each test. Prefer role/label locators; the `.switch` checkbox is visually hidden, click its label. CI runs them as the `e2e` job; `deploy` needs both `verify` and `e2e`.
+- Dependabot opens weekly PRs for npm (Angular packages grouped) and GitHub Actions.

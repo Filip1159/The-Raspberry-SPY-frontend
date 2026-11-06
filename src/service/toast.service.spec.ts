@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { TestBed } from '@angular/core/testing'
 import { ToastService } from './toast.service'
 
@@ -5,11 +6,11 @@ describe('ToastService', () => {
     let service: ToastService
 
     beforeEach(() => {
-        jasmine.clock().install()
+        vi.useFakeTimers()
         service = TestBed.inject(ToastService)
     })
 
-    afterEach(() => jasmine.clock().uninstall())
+    afterEach(() => vi.useRealTimers())
 
     it('shows a message with its kind', () => {
         service.success('Saved')
@@ -25,10 +26,10 @@ describe('ToastService', () => {
         service.info('Fyi')
         service.error('Oops')
 
-        jasmine.clock().tick(4001)
+        vi.advanceTimersByTime(4001)
         expect(service.toasts().map(t => t.message)).toEqual(['Oops'])
 
-        jasmine.clock().tick(4000)
+        vi.advanceTimersByTime(4000)
         expect(service.toasts()).toEqual([])
     })
 

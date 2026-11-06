@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http'
 import { Component, inject, signal } from '@angular/core'
+import { toSignal } from '@angular/core/rxjs-interop'
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
@@ -31,6 +32,10 @@ export class GreetingsComponent {
     form = new FormGroup({
         text: new FormControl('', { validators: [Validators.required, Validators.maxLength(MAX_GREETING_LENGTH)], nonNullable: true }),
     })
+
+    // The template reads the text through a signal: with zoneless change detection a plain FormControl value
+    // changed from code (reset after sending) would not refresh the counter and the Send button
+    text = toSignal(this.form.controls.text.valueChanges, { initialValue: this.form.controls.text.value })
 
     send() {
         if (this.sending()) return

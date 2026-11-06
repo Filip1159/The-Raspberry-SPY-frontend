@@ -1,0 +1,19 @@
+version: 2
+updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 5
+      groups:
+          # Angular packages must move together
+          angular:
+              patterns: ['@angular/*', '@angular-devkit/*', 'angular-eslint', 'zone.js']
+          lint-and-format:
+              patterns: ['eslint*', 'typescript-eslint', 'prettier', 'eslint-*']
+          testing:
+              patterns: ['vitest', '@vitest/*', 'jsdom', '@playwright/test']
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: weekly
