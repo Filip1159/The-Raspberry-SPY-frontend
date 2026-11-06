@@ -256,6 +256,10 @@ raspberry-spy-section {
     flex-wrap: wrap;
     gap: 16px;
 
+    &__icon {
+        font-size: 2em;
+    }
+
     &__link {
         display: flex;
         flex-direction: column;

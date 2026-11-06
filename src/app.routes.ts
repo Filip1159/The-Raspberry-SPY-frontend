@@ -1,12 +1,16 @@
 import { Routes } from '@angular/router'
-import { Login } from './components/login/login'
 import { Portfolio } from './components/portfolio/portfolio'
 import { authGuard } from './service/auth.guard'
 import { unsavedChangesGuard } from './service/unsaved-changes.guard'
 
 export const routes: Routes = [
     { path: '', component: Portfolio, title: 'Filip Wiśniewski – Software Engineer' },
-    { path: 'login', component: Login, title: 'Sign in – The Raspberry SPY', data: { noindex: true } },
+    {
+        path: 'login',
+        loadComponent: () => import('./components/login/login').then(m => m.Login),
+        title: 'Sign in – The Raspberry SPY',
+        data: { noindex: true },
+    },
     {
         path: 'app',
         loadComponent: () => import('./components/shell/app-shell').then(m => m.AppShell),

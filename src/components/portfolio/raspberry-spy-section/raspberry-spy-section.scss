@@ -119,3 +119,9 @@
         }
     }
 }
+
+// Keeps the layout stable while the deferred greeting form loads
+.spy__greeting__placeholder {
+    height: 220px;
+    border-radius: 12px;
+}

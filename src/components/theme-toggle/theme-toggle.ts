@@ -1,19 +1,19 @@
 import { afterNextRender, Component, inject } from '@angular/core'
-import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
+import { Icon } from '../icon/icon'
 import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons'
 import { ThemeService } from '../../service/theme.service'
 
 @Component({
     selector: 'theme-toggle',
     standalone: true,
-    imports: [FontAwesomeModule],
+    imports: [Icon],
     template: `
         <button
             class="toggle"
             type="button"
             (click)="theme.toggle()"
             [attr.aria-label]="theme.current() === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'">
-            <fa-icon [icon]="theme.current() === 'dark' ? faSun : faMoon" />
+            <app-icon [icon]="theme.current() === 'dark' ? faSun : faMoon" />
         </button>
     `,
     styles: `

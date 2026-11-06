@@ -12,3 +12,19 @@ if (!window.matchMedia) {
             dispatchEvent: () => false,
         }) as MediaQueryList
 }
+
+// `@defer (on viewport)` needs IntersectionObserver; report every element as visible so deferred content renders in specs
+if (!('IntersectionObserver' in window)) {
+    class VisibleObserver {
+        constructor(private callback: IntersectionObserverCallback) {}
+        observe(target: Element) {
+            this.callback([{ isIntersecting: true, target } as IntersectionObserverEntry], this as unknown as IntersectionObserver)
+        }
+        unobserve = () => undefined
+        disconnect = () => undefined
+        takeRecords() {
+            return []
+        }
+    }
+    window.IntersectionObserver = VisibleObserver as unknown as typeof IntersectionObserver
+}

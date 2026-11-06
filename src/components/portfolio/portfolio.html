@@ -24,9 +24,9 @@
             </p>
             <div class="hero__actions">
                 <a class="button" href="#projects">See my projects</a>
-                <a class="button button--ghost" [href]="links.github" target="_blank" rel="noopener"> <fa-icon [icon]="faGithub" /> GitHub </a>
+                <a class="button button--ghost" [href]="links.github" target="_blank" rel="noopener"> <app-icon [icon]="faGithub" /> GitHub </a>
                 <a class="button button--ghost" [href]="links.linkedin" target="_blank" rel="noopener">
-                    <fa-icon [icon]="faLinkedinIn" /> LinkedIn
+                    <app-icon [icon]="faLinkedinIn" /> LinkedIn
                 </a>
             </div>
         </div>
@@ -117,19 +117,19 @@
         <p class="section__intro">You can find me on LinkedIn, and the code of everything above lives on GitHub.</p>
         <div class="contact">
             <a class="contact__link" [href]="links.linkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
-                <fa-icon [icon]="faLinkedinIn" size="2x" />
+                <app-icon class="contact__icon" [icon]="faLinkedinIn" />
                 <span>LinkedIn</span>
             </a>
             <a class="contact__link" [href]="links.github" target="_blank" rel="noopener" aria-label="GitHub">
-                <fa-icon [icon]="faGithub" size="2x" />
+                <app-icon class="contact__icon" [icon]="faGithub" />
                 <span>GitHub</span>
             </a>
             <a class="contact__link" [href]="links.chess" target="_blank" rel="noopener" aria-label="Chess.com">
-                <fa-icon [icon]="faChess" size="2x" />
+                <app-icon class="contact__icon" [icon]="faChess" />
                 <span>Chess.com</span>
             </a>
             <a class="contact__link" [href]="links.duolingo" target="_blank" rel="noopener" aria-label="Duolingo">
-                <fa-icon [icon]="faDuolingo" size="2x" />
+                <app-icon class="contact__icon" [icon]="faDuolingo" />
                 <span>Duolingo</span>
             </a>
         </div>

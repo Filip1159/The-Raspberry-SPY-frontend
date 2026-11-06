@@ -69,6 +69,11 @@
     </div>
 
     <div class="spy__greeting">
+        <!-- Below the fold: the form (and @angular/forms) loads when it is about to scroll into view -->
+        @defer (on viewport; prefetch on idle) {
         <greetings />
+        } @placeholder {
+        <div class="skeleton spy__greeting__placeholder" aria-hidden="true"></div>
+        }
     </div>
 </article>
