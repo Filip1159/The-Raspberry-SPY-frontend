@@ -1,11 +1,12 @@
 import { Component, ElementRef, HostListener, inject, OnDestroy, signal, ViewChild, computed } from '@angular/core'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
-import { faAngleUp, faArrowsToCircle, faLightbulb, faVideo, faVideoSlash } from '@fortawesome/free-solid-svg-icons'
+import { faAngleUp, faArrowsToCircle, faCamera, faExpand, faLightbulb, faVideo, faVideoSlash } from '@fortawesome/free-solid-svg-icons'
 import { SocketService } from '../../service/socket.service'
-import { LongPressButton } from './longpress-button/longpress-button.component'
+import { LongPressButton } from './longpress-button/longpress-button'
 import { Slider } from './slider/slider'
 import { env } from './../../environment'
 import { AuthService } from '../../service/auth.service'
+import { ToastService } from '../../service/toast.service'
 import { BACKEND_OFFLINE_MESSAGE, BackendStatusService } from '../../service/backend-status.service'
 import type { MockCamera } from './mock-camera'
 
@@ -26,19 +27,22 @@ const KEY_REPEAT_MS = 100
     selector: 'app-video-stream',
     standalone: true,
     imports: [FontAwesomeModule, LongPressButton, Slider],
-    templateUrl: './video-stream.component.html',
-    styleUrl: './video-stream.component.scss',
+    templateUrl: './video-stream.html',
+    styleUrl: './video-stream.scss',
 })
-export class VideoStreamComponent implements OnDestroy {
+export class VideoStream implements OnDestroy {
     @ViewChild('video', { static: false })
     private video!: ElementRef<HTMLVideoElement>
 
     private auth = inject(AuthService)
     private socket = inject(SocketService)
+    private toasts = inject(ToastService)
     backendStatus = inject(BackendStatusService)
 
     faAngleUp = faAngleUp
     faArrowsToCircle = faArrowsToCircle
+    faCamera = faCamera
+    faExpand = faExpand
     faLightbulb = faLightbulb
     faVideo = faVideo
     faVideoSlash = faVideoSlash
@@ -46,6 +50,8 @@ export class VideoStreamComponent implements OnDestroy {
     offlineMessage = BACKEND_OFFLINE_MESSAGE
 
     state = signal<CameraState>('off')
+    /** True while a live stream has run out of data and waits for more (HLS stall) */
+    buffering = signal(false)
     brightness = 0
 
     /** The steering needs the websocket, which exists only while the Raspberry is reachable */
@@ -58,7 +64,11 @@ export class VideoStreamComponent implements OnDestroy {
         this.state.set('connecting')
         const video = this.video.nativeElement
         video.onloadeddata = () => video.play().catch(() => undefined)
-        video.onplaying = () => this.state.set('live')
+        video.onplaying = () => {
+            this.buffering.set(false)
+            this.state.set('live')
+        }
+        video.onwaiting = () => this.buffering.set(this.state() === 'live')
 
         if (env.mock) {
             // No HLS stream without a Raspberry: show a generated test pattern instead
@@ -75,6 +85,8 @@ export class VideoStreamComponent implements OnDestroy {
         const video = this.video.nativeElement
         video.onloadeddata = null
         video.onplaying = null
+        video.onwaiting = null
+        this.buffering.set(false)
         video.pause()
         video.removeAttribute('src')
         video.srcObject = null
@@ -89,6 +101,33 @@ export class VideoStreamComponent implements OnDestroy {
         this.state.set('error')
         // Find out whether the whole Raspberry is down or just the stream
         this.backendStatus.check()
+    }
+
+    /** Saves the current frame as a PNG */
+    takeSnapshot(): void {
+        const video = this.video.nativeElement
+        if (!video.videoWidth) return
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        try {
+            canvas.getContext('2d')?.drawImage(video, 0, 0)
+            const link = document.createElement('a')
+            link.href = canvas.toDataURL('image/png')
+            link.download = `raspberry-spy-${new Date().toISOString().replace(/[:.]/g, '-')}.png`
+            link.click()
+            this.toasts.success('Snapshot saved')
+        } catch {
+            // a stream from another origin without CORS headers taints the canvas
+            this.toasts.error('The browser did not allow saving this frame')
+        }
+    }
+
+    /** Fullscreen of the frame (not the bare video), so the overlays stay visible */
+    toggleFullscreen(): void {
+        const frame = this.video.nativeElement.parentElement
+        if (document.fullscreenElement) document.exitFullscreen()
+        else frame?.requestFullscreen?.()
     }
 
     move(msg: string): void {

@@ -2,13 +2,13 @@ import { afterNextRender, Component, inject, OnDestroy, signal } from '@angular/
 import { RouterLink } from '@angular/router'
 import { AuthService } from '../../../service/auth.service'
 import { BackendStatusService } from '../../../service/backend-status.service'
-import { GreetingsComponent } from '../../greetings/greetings.component'
+import { Greetings } from '../../greetings/greetings'
 import { RASPBERRY_SPY } from '../portfolio.data'
 
 @Component({
     selector: 'raspberry-spy-section',
     standalone: true,
-    imports: [RouterLink, GreetingsComponent],
+    imports: [RouterLink, Greetings],
     templateUrl: './raspberry-spy-section.html',
     styleUrl: './raspberry-spy-section.scss',
 })

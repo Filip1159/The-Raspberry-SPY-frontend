@@ -3,19 +3,19 @@ import { provideHttpClient } from '@angular/common/http'
 import { provideHttpClientTesting } from '@angular/common/http/testing'
 import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { FormBuilder } from '@angular/forms'
-import { AlarmComponent } from './alarm.component'
+import { AlarmCard } from './alarm'
 
-describe('AlarmComponent', () => {
-    let fixture: ComponentFixture<AlarmComponent>
-    let component: AlarmComponent
+describe('AlarmCard', () => {
+    let fixture: ComponentFixture<AlarmCard>
+    let component: AlarmCard
 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
-            imports: [AlarmComponent],
+            imports: [AlarmCard],
             providers: [provideHttpClient(), provideHttpClientTesting()],
         }).compileComponents()
 
-        fixture = TestBed.createComponent(AlarmComponent)
+        fixture = TestBed.createComponent(AlarmCard)
         fixture.componentRef.setInput(
             'form',
             TestBed.inject(FormBuilder).group({ day: ['monday'], hour: [7], minute: [5], enabled: [true], melody: ['Nokia'] })

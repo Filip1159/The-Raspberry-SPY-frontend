@@ -13,6 +13,7 @@
         "check:build": "node scripts/check-build.mjs",
         "test:ci": "ng test --no-watch --coverage",
         "e2e": "playwright test",
+        "contract": "node scripts/contract-test.mjs",
         "lint": "ng lint",
         "format": "prettier --write ."
     },

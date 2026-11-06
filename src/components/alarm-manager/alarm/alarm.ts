@@ -10,10 +10,10 @@ import { ToastService } from '../../../service/toast.service'
     selector: 'app-alarm',
     standalone: true,
     imports: [FontAwesomeModule],
-    templateUrl: './alarm.component.html',
-    styleUrl: './alarm.component.scss',
+    templateUrl: './alarm.html',
+    styleUrl: './alarm.scss',
 })
-export class AlarmComponent {
+export class AlarmCard {
     faPlay = faPlay
 
     private api = inject(RaspberryApi)

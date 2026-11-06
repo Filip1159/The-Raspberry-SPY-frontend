@@ -3,24 +3,24 @@ import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { env } from '../../environment'
-import { AlarmManagerComponent } from './alarm-manager.component'
+import { AlarmManager } from './alarm-manager'
 
-describe('AlarmManagerComponent', () => {
+describe('AlarmManager', () => {
     const alarmsUrl = `${env.backendApiUrl}/alarms`
     const alarms = ['monday', 'tuesday'].map(day => ({ day, hour: 7, minute: 0, melody: 'Nokia', enabled: true }))
 
-    let fixture: ComponentFixture<AlarmManagerComponent>
-    let component: AlarmManagerComponent
+    let fixture: ComponentFixture<AlarmManager>
+    let component: AlarmManager
     let httpMock: HttpTestingController
 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
-            imports: [AlarmManagerComponent],
+            imports: [AlarmManager],
             providers: [provideHttpClient(), provideHttpClientTesting()],
         }).compileComponents()
 
         httpMock = TestBed.inject(HttpTestingController)
-        fixture = TestBed.createComponent(AlarmManagerComponent)
+        fixture = TestBed.createComponent(AlarmManager)
         component = fixture.componentInstance
         fixture.detectChanges()
         httpMock.expectOne(alarmsUrl).flush(alarms)

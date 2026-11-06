@@ -60,6 +60,11 @@
         }
     }
 
+    &__overlay--buffering {
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.35);
+    }
+
     &__error {
         font-weight: 700;
     }
@@ -91,7 +96,9 @@
 
     &__toolbar {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
+        gap: 8px;
         min-height: 44px;
     }
 

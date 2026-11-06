@@ -9,9 +9,27 @@ Hello! Welcome to my repository containing the Raspberry SPY app frontend - deve
 - adjustable camera backlight
 - "local" interface built with 20x4 LCD display and rotary encoder
 - programmable alarm clock built with a buzzer and 7 built-in melodies
+- live stats dashboard (CPU, temperature, memory, BLE climate sensor) with sparklines
+- public portfolio page at `/` (pre-rendered, works with the Raspberry switched off), control panel behind a login under `/app`, light and dark theme
 - Hosted on GitHub Pages at https://filipwisniewski.pl/ (backend exposed via Cloudflare Tunnel)
 
 Page unavailable? Oops, I must have switched off my raspberry...
+
+#### Development
+
+No Raspberry is needed. Node 22+:
+
+```bash
+npm ci
+npm run start:mock   # mock backend + UI on http://localhost:4200, login demo / demo
+npm run lint
+npm run test:ci      # Vitest + coverage thresholds
+npm run e2e          # Playwright + axe against the mock backend (first time: npx playwright install chromium)
+npm run build        # production build with pre-rendering -> dist/raspberry-ui/browser
+npm run contract     # REST + Socket.IO contract checks (mock server, or a backend started with `python main.py --fake`)
+```
+
+Pushes to `master` run lint, tests, build and E2E in GitHub Actions and, if all is green, deploy to GitHub Pages. See [AGENTS.md](AGENTS.md) for the architecture and conventions and [BACKLOG.md](BACKLOG.md) for planned work.
 
 #### Components used
 

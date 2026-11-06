@@ -12,6 +12,17 @@ test('the stats page shows live values from the socket', async ({ page }) => {
     await expect(page.getByRole('meter').first()).toHaveAttribute('aria-valuenow', /^\d/, { timeout: 15_000 })
 })
 
+test('the stats charts are filled from the history the Raspberry remembers', async ({ page }) => {
+    const sample = (cpuUsage: number) => ({ cpuUsage, cpuTemperature: 50, ramUsage: 30, temperature: 21, humidity: 40, timestamp: 1 })
+    await page.route('**/stats/history', route => route.fulfill({ json: [sample(10), sample(20), sample(30)] }))
+
+    await page.reload()
+    await page.getByRole('link', { name: 'Stats' }).click()
+
+    // the mock also pushes a live reading right after connecting, hence more than the 3 remembered samples are fine
+    await expect(page.getByRole('img', { name: /CPU usage in percent.*over the last [3-9] updates/i })).toBeVisible()
+})
+
 test('alarms can be changed, saved and survive a reload', async ({ page }) => {
     await page.getByRole('link', { name: 'Alarm' }).click()
     const monday = page.getByRole('article', { name: 'Alarm on Monday' })

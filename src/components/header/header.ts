@@ -9,10 +9,10 @@ import { ThemeToggle } from '../theme-toggle/theme-toggle'
     selector: 'app-header',
     standalone: true,
     imports: [FontAwesomeModule, RouterLink, RouterLinkActive, ThemeToggle],
-    templateUrl: './header.component.html',
-    styleUrl: './header.component.scss',
+    templateUrl: './header.html',
+    styleUrl: './header.scss',
 })
-export class HeaderComponent {
+export class Header {
     private auth = inject(AuthService)
 
     faArrowRightFromBracket = faArrowRightFromBracket

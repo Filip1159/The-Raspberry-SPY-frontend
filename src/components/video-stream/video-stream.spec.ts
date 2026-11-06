@@ -4,12 +4,13 @@ import { provideHttpClientTesting } from '@angular/common/http/testing'
 import { signal } from '@angular/core'
 import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { BackendStatusService } from '../../service/backend-status.service'
+import { ToastService } from '../../service/toast.service'
 import { SocketService } from '../../service/socket.service'
-import { VideoStreamComponent } from './video-stream.component'
+import { VideoStream } from './video-stream'
 
-describe('VideoStreamComponent', () => {
-    let component: VideoStreamComponent
-    let fixture: ComponentFixture<VideoStreamComponent>
+describe('VideoStream', () => {
+    let component: VideoStream
+    let fixture: ComponentFixture<VideoStream>
     let emit: Mock
     let connected: ReturnType<typeof signal<boolean>>
 
@@ -23,11 +24,11 @@ describe('VideoStreamComponent', () => {
         emit = vi.fn()
         connected = signal(true)
         await TestBed.configureTestingModule({
-            imports: [VideoStreamComponent],
+            imports: [VideoStream],
             providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SocketService, useValue: { connected, emit } }],
         }).compileComponents()
 
-        fixture = TestBed.createComponent(VideoStreamComponent)
+        fixture = TestBed.createComponent(VideoStream)
         component = fixture.componentInstance
         fixture.detectChanges()
     })
@@ -110,6 +111,94 @@ describe('VideoStreamComponent', () => {
         component.onVideoError()
 
         expect(component.state()).toBe('off')
+    })
+
+    it('shows a buffering overlay while a live stream stalls and hides it when playback resumes', () => {
+        const video: HTMLVideoElement = fixture.nativeElement.querySelector('video')
+        component.state.set('connecting')
+        component.cameraOn()
+        video.onplaying?.(new Event('playing'))
+        fixture.detectChanges()
+        expect(fixture.nativeElement.textContent).not.toContain('Buffering')
+
+        video.onwaiting?.(new Event('waiting'))
+        fixture.detectChanges()
+        expect(fixture.nativeElement.textContent).toContain('Buffering')
+
+        video.onplaying?.(new Event('playing'))
+        fixture.detectChanges()
+        expect(fixture.nativeElement.textContent).not.toContain('Buffering')
+    })
+
+    it('does not call waiting before the first frame "buffering"', () => {
+        const video: HTMLVideoElement = fixture.nativeElement.querySelector('video')
+        component.cameraOn()
+        video.onwaiting?.(new Event('waiting'))
+
+        expect(component.buffering()).toBe(false)
+    })
+
+    it('offers the snapshot only while the stream is live', () => {
+        const snapshot = () => [...fixture.nativeElement.querySelectorAll('button')].find((b: HTMLElement) => b.textContent?.includes('Snapshot'))
+        component.state.set('connecting')
+        fixture.detectChanges()
+        expect(snapshot().disabled).toBe(true)
+
+        component.state.set('live')
+        fixture.detectChanges()
+        expect(snapshot().disabled).toBe(false)
+    })
+
+    describe('snapshot', () => {
+        let download: Mock
+        let toasts: ToastService
+
+        beforeEach(() => {
+            toasts = TestBed.inject(ToastService)
+            vi.spyOn(toasts, 'success')
+            vi.spyOn(toasts, 'error')
+            download = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined) as unknown as Mock
+            vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D)
+            const video: HTMLVideoElement = fixture.nativeElement.querySelector('video')
+            Object.defineProperty(video, 'videoWidth', { value: 640 })
+            Object.defineProperty(video, 'videoHeight', { value: 360 })
+        })
+
+        afterEach(() => vi.restoreAllMocks())
+
+        it('downloads the current frame as a PNG', () => {
+            vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,AAAA')
+
+            component.takeSnapshot()
+
+            expect(download).toHaveBeenCalled()
+            expect(toasts.success).toHaveBeenCalled()
+        })
+
+        it('says so when the browser refuses to export the frame', () => {
+            vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockImplementation(() => {
+                throw new Error('tainted canvas')
+            })
+
+            component.takeSnapshot()
+
+            expect(download).not.toHaveBeenCalled()
+            expect(toasts.error).toHaveBeenCalled()
+        })
+    })
+
+    it('enters and leaves fullscreen with the frame', () => {
+        const frame = fixture.nativeElement.querySelector('video').parentElement as HTMLElement
+        frame.requestFullscreen = vi.fn().mockResolvedValue(undefined)
+        document.exitFullscreen = vi.fn().mockResolvedValue(undefined)
+
+        component.toggleFullscreen()
+        expect(frame.requestFullscreen).toHaveBeenCalled()
+
+        Object.defineProperty(document, 'fullscreenElement', { value: frame, configurable: true })
+        component.toggleFullscreen()
+        expect(document.exitFullscreen).toHaveBeenCalled()
+        Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true })
     })
 
     it('sends the light brightness', () => {

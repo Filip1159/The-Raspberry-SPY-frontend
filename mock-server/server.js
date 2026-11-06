@@ -2,7 +2,7 @@
  * Mock of the Raspberry backend, so the UI can be developed without the Raspberry: npm run start:mock
  *
  * Implements the same contract as The-Raspberry-SPY-backend (see AGENTS.md): /health, /login, /alarms, /alarms/play,
- * /greetings and Socket.IO (JWT handshake, 5 s stats broadcasts, 'message' control events).
+ * /refresh, /logout, /greetings, /stats/history and Socket.IO (JWT handshake, 5 s stats broadcasts, 'message' control events).
  *
  * Failure simulation (for testing the offline/error states of the UI), e.g.
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"offline": true}'
@@ -29,6 +29,12 @@ const MELODIES = ['Are you sleeping', 'Nokia', 'Old MacDonald', 'Panic', 'Pink p
 
 const secret = crypto.randomBytes(32)
 
+const REFRESH_COOKIE = 'refresh_token'
+const REFRESH_LIFETIME_SECONDS = 7 * 24 * 3600
+const REFRESH_GRACE_SECONDS = 30
+// refresh token -> expiry (epoch seconds). A spent token keeps working for the grace period, like in the real backend
+const refreshTokens = new Map()
+
 const initialAlarms = () => DAYS.map(day => ({ day, hour: 7, minute: 0, melody: 'Nokia', enabled: day !== 'saturday' && day !== 'sunday' }))
 
 const state = {
@@ -38,6 +44,10 @@ const state = {
     alarms: initialAlarms(),
     greetings: [],
 }
+
+// Like the real backend: the latest samples of the 5 s broadcast, oldest first
+const HISTORY_LENGTH = 120
+const history = []
 
 // ---- JWT (HS256 is enough here, the UI only reads the `exp` claim) ----
 
@@ -69,10 +79,25 @@ function verifyToken(token) {
     }
 }
 
+function readCookie(req, name) {
+    const match = (req.headers.cookie ?? '')
+        .split(';')
+        .map(part => part.trim().split('='))
+        .find(([key]) => key === name)
+    return match ? match[1] : null
+}
+
+function issueRefreshToken(res) {
+    const token = crypto.randomBytes(32).toString('base64url')
+    refreshTokens.set(token, Math.floor(Date.now() / 1000) + REFRESH_LIFETIME_SECONDS)
+    res.cookie(REFRESH_COOKIE, token, { httpOnly: true, sameSite: 'strict', path: '/', maxAge: REFRESH_LIFETIME_SECONDS * 1000 })
+}
+
 // ---- REST ----
 
 const app = express()
-app.use(cors())
+// credentials: the refresh token travels in an httpOnly cookie, so the browser needs the explicit origin and the credentials header
+app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
 app.use((req, _res, next) => {
     console.log(`${req.method} ${req.url}`)
@@ -117,7 +142,28 @@ app.post('/login', (req, res) => {
     if (username !== USERNAME || password !== PASSWORD) return res.status(401).json({ msg: 'bad credentials' })
 
     const { token, exp } = signToken(username)
+    issueRefreshToken(res)
     res.json({ access_token: token, expires_at: new Date(exp * 1000).toISOString() })
+})
+
+app.post('/refresh', (req, res) => {
+    const spent = readCookie(req, REFRESH_COOKIE)
+    const expires = spent ? refreshTokens.get(spent) : undefined
+    const now = Math.floor(Date.now() / 1000)
+    if (!expires || expires <= now) {
+        res.clearCookie(REFRESH_COOKIE, { path: '/' })
+        return res.status(401).json({ msg: 'No valid refresh token' })
+    }
+    refreshTokens.set(spent, Math.min(expires, now + REFRESH_GRACE_SECONDS))
+    issueRefreshToken(res)
+    const { token, exp } = signToken(USERNAME)
+    res.json({ access_token: token, expires_at: new Date(exp * 1000).toISOString() })
+})
+
+app.post('/logout', (req, res) => {
+    refreshTokens.delete(readCookie(req, REFRESH_COOKIE))
+    res.clearCookie(REFRESH_COOKIE, { path: '/' })
+    res.status(204).end()
 })
 
 app.get('/alarms', requireToken, (_req, res) => res.json(state.alarms))
@@ -152,6 +198,8 @@ app.post('/alarms/play', requireToken, (req, res) => {
 })
 
 // Like the real backend: greetings can only be read by the owner
+app.get('/stats/history', requireToken, (_req, res) => res.json(history))
+
 app.get('/greetings', requireToken, (_req, res) => res.json(state.greetings))
 
 app.post('/greetings', (req, res) => {
@@ -212,11 +260,21 @@ function emitStats(target) {
         temperature: Number(stats.temperature.toFixed(1)),
         voltage: Number(stats.voltage.toFixed(2)),
         lastUpdated: new Date().toTimeString().slice(0, 8),
+        stale: false,
     })
 }
 
 setInterval(() => {
     advanceStats()
+    history.push({
+        cpuUsage: Math.round(stats.cpuUsage),
+        cpuTemperature: Math.round(stats.cpuTemperature),
+        ramUsage: Math.round(stats.ramUsage),
+        humidity: Number(stats.humidity.toFixed(1)),
+        temperature: Number(stats.temperature.toFixed(1)),
+        timestamp: Math.floor(Date.now() / 1000),
+    })
+    if (history.length > HISTORY_LENGTH) history.shift()
     emitStats(io)
 }, STATS_INTERVAL_MS)
 

@@ -25,6 +25,7 @@ npm run format     # prettier --write .
 npm test           # unit tests in watch mode
 npm run test:ci    # what CI runs: once, with a coverage summary (coverage/ has the HTML report)
 npm run e2e        # Playwright end-to-end tests (starts mock-server + `ng serve --configuration mock` itself, reuses them when running; first time: `npx playwright install chromium`)
+npm run contract   # contract checks (REST + socket) against the mock server; `-- http://localhost:8080` targets a backend started with `python main.py --fake` (restart it between runs: greeting rate limit)
 npm run check:build # sanity check of dist/ after `npm run build` (pre-rendered portfolio, CNAME, robots, sitemap, ...)
 ```
 
@@ -58,11 +59,11 @@ src/
     login/  greetings/ (embedded widget, not a page)  alarm-manager/ (+ alarm/)  video-stream/ (+ slider, longpress-button, mock-camera)  stats/ (stats-page)
   service/
     auth.interceptor.ts   # adds `Authorization: Bearer` to protected backend calls (not /login, /health, POST /greetings); a 401 signs the user out with a toast
-    auth.service.ts       # JWT in localStorage ('jwt'), expiry timers (warning toast 15 s before)
+    auth.service.ts       # JWT in localStorage ('jwt'), silent refresh 60 s before expiry via the refresh cookie, restoreSession(), expiry timers (warning toast 15 s before when refreshing fails)
     auth.guard.ts, unsaved-changes.guard.ts
     raspberry.api.ts      # all REST calls; no token handling here, `authInterceptor` adds it
     socket.service.ts     # single socket.io connection, listen<T>() returns Observable, `connected` signal
-    stats.service.ts      # live system/climate values + 60-sample history (created by AppShell)
+    stats.service.ts      # live system/climate values + 60-sample history, seeded from GET /stats/history (created by AppShell)
     backend-status.service.ts / .interceptor.ts   # online/offline detection for the Raspberry (see Gotchas)
     seo.service.ts        # adds `noindex` for routes with `data: { noindex: true }` (login, /app)
     theme.service.ts      # light/dark choice (data-theme on <html>, stored in localStorage 'theme')
@@ -74,11 +75,13 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 
 ## Backend contract (what the UI depends on)
 
-- `POST /login` `{username,password}` -> `{access_token, expires_at}`; RS256 JWT, 30 min lifetime, no refresh.
+- `POST /login` `{username,password}` -> `{access_token, expires_at}`; RS256 JWT, 30 min lifetime. The answer also sets an **httpOnly, SameSite=Strict `refresh_token` cookie** (7 days; the UI and API are the same site, `withCredentials: true` on these calls, CORS allows credentials).
+- `POST /refresh` (cookie, no bearer) -> a new `{access_token, expires_at}` and a rotated cookie; `401 {msg}` when the cookie is missing, unknown or expired. A spent token still works for 30 s (two tabs refreshing together). `POST /logout` -> 204, revokes the cookie. `AuthService` renews the token 60 s before it expires (a warning toast appears only when that fails, e.g. the Pi is offline), restores a session whose token expired while the tab was closed (`authGuard` -> `restoreSession()`, only when an old token is still in localStorage, so the portfolio never calls the backend), and `SocketService` reconnects when the token changes (the backend ties the socket session to the handshake token).
 - `GET/POST /alarms`, `POST /alarms/play`, `GET /greetings`: `Authorization: Bearer <jwt>`. `POST /greetings` is public (max 500 characters, 3/min and 20/h per visitor). `POST /login` allows 5 failed attempts per minute per visitor; both answer `429` when exceeded, which the UI must show as "too many attempts", not as "offline".
+- `GET /stats/history`: `Authorization: Bearer <jwt>`, the last 120 samples `{cpuUsage,cpuTemperature,ramUsage,humidity|null,temperature|null,timestamp}` oldest first (kept in memory by the backend, so they are gone after a restart); `StatsService` seeds the sparklines with them. Failure is not fatal (charts start empty).
 - `GET /health` (public) is the liveness probe used by `BackendStatusService`.
 - All REST goes through `env.backendApiUrl` = `<host>/api` (nginx strips `/api`; the old `/flask` alias still works on the Pi until it is removed).
-- Socket.IO on `env.websocketUrl` (`/socket.io`) requires a valid JWT in the handshake (`auth: { token }`); otherwise the server refuses with `unauthorized`. `SocketService` connects only while a token exists and logs out on `unauthorized`. Server pushes every 5 s: `system_stats_update` `{cpuUsage,cpuTemperature,ramUsage}` and `ble_update` `{humidity,temperature,voltage,lastUpdated}`. Client sends event `message` with a direction name (`UP`, `DOWN_LEFT`, `CENTER`, …) or `LED<0-255>`.
+- Socket.IO on `env.websocketUrl` (`/socket.io`) requires a valid JWT in the handshake (`auth: { token }`); otherwise the server refuses with `unauthorized`. `SocketService` connects only while a token exists and logs out on `unauthorized`. Server pushes every 5 s: `system_stats_update` `{cpuUsage,cpuTemperature,ramUsage}` and `ble_update` `{humidity,temperature,voltage,lastUpdated,stale}` (`stale`: no reading yet or older than 5 min; the UI does not use it yet). Client sends event `message` with a direction name (`UP`, `DOWN_LEFT`, `CENTER`, …) or `LED<0-255>`.
 - HLS: `${env.hlsUrl}/cam1/index.m3u8?jwt=<token>` (MediaMTX validates the same JWT).
 - Backend CORS only allows `https://filipwisniewski.pl` (+ `www`). For local dev against the Pi, set `EXTRA_ALLOWED_ORIGINS` on the backend.
 
@@ -92,7 +95,7 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 ## Conventions
 
 - Prettier: 4 spaces, single quotes, **no semicolons**, `printWidth` 150, `arrowParens: avoid`. Run `npm run lint` before committing.
-- Components are standalone with `templateUrl`/`styleUrl`. Older files use `*.component.ts`, newer ones just `login.ts`/`stats.ts` – follow the folder you are in. Use signals for state, `inject()` instead of constructor DI.
+- Components are standalone with `templateUrl`/`styleUrl`. Files and classes are named after the thing, without a `.component` / `Component` suffix (`login.ts` with `class Login`, `alarm.ts` with `AlarmCard` because `Alarm` is the API model). Selectors are a mix of `app-*` and plain names; keep the one of the component you touch. Use signals for state, `inject()` instead of constructor DI.
 - BEM-style SCSS class names (`header__tabs__tab`); mobile support via `@media (max-width: 600px)`.
 - **Use the design tokens and shared classes** from `styles.scss` (`var(--accent)`, `var(--card)`, `.button`, `.card`, `.field`, `.notice`...) instead of hardcoded colors, so light and dark mode both work. Never use `alert()`: inject `ToastService`. Every interactive element needs an accessible name (visible label or `aria-label`), a visible focus state (global `:focus-visible`), and must work with the keyboard; verify new pages with axe in both themes.
 - Keep `public/CNAME` and the `404.html` copy step in `deploy.yml` (SPA deep-link fallback on Pages) intact.
@@ -113,12 +116,12 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 - The social preview, icons and webp images were generated with throw-away puppeteer/sharp scripts (not in the repo); keep `og-image.jpg` at 1200x630.
 - Fonts (Roboto 400/700, latin and latin-ext for the Polish letters) are self-hosted through `@fontsource/roboto` entries in `angular.json` `styles`; do not add Google Fonts links back.
 - Dark mode: CSS variables switch through `prefers-color-scheme` unless the visitor picked a theme (`data-theme` on `<html>`, applied by an inline script in `index.html` before the first paint). `ThemeToggle` resolves its icon after hydration because the pre-rendered page cannot know the theme.
-- The stream page needs `SocketService.connected` and `BackendStatusService` to enable the steering controls; keyboard control (arrows, C) is handled in `VideoStreamComponent`.
+- The stream page needs `SocketService.connected` and `BackendStatusService` to enable the steering controls; keyboard control (arrows, C) is handled in `VideoStream`.
 
 ## Tests and CI
 
 - Specs live next to the code (`*.spec.ts`), 90+ of them: services (auth expiry timers, backend status, stats history, theme, toasts, SEO, API calls), guards, the route table (redirects, guards, noindex), and the main components (login, greetings, portfolio, stream page keyboard control, alarms unsaved-changes flow). Write a spec for new logic; use `HttpTestingController` for HTTP, `vi.useFakeTimers()` / `vi.advanceTimersByTime()` for timers, `vi.fn()` / `vi.spyOn()` for spies (import `vi` from `vitest`), and stub `SocketService` (`{ connected: signal(true), emit, listen }`) instead of opening a socket (its own spec replaces `SOCKET_FACTORY`). `test:ci` fails when coverage drops below the thresholds in `angular.json` (`coverageThresholds`).
-- **Zoneless pitfall**: templates must read signals (or state changed by DOM events). A plain `FormControl.value` changed from code does not refresh the view; wrap it with `toSignal(control.valueChanges, ...)` (see `GreetingsComponent`).
+- **Zoneless pitfall**: templates must read signals (or state changed by DOM events). A plain `FormControl.value` changed from code does not refresh the view; wrap it with `toSignal(control.valueChanges, ...)` (see `Greetings`).
 - `.github/workflows/ci.yml` is one pipeline: `verify` (npm ci, lint, `test:ci`, build with pre-rendering, `check:build`, 404.html fallback) and `deploy` (GitHub Pages) which `needs: [verify, e2e]` and runs only for pushes to `master`. Pull requests run `verify` only. Never deploy from another workflow.
 - End-to-end tests (`e2e/*.spec.ts`, config `playwright.config.ts`) drive the real UI in Chromium against the mock server: portfolio without backend, theme, login/logout, wrong password, 429, redirects, stats from the socket, alarm edit/save/discard, offline banner and recovery; `a11y.spec.ts` runs axe (WCAG 2.0/2.1 A and AA) on every page in both themes, on desktop and the `mobile` (Pixel 7) project, which also runs `*.mobile.spec.ts` (no horizontal scroll, bottom nav). New pages need an axe case. They change the mock's state, so they run serially and `e2e/fixtures.ts` resets the failure simulation around each test. Prefer role/label locators; the `.switch` checkbox is visually hidden, click its label. CI runs them as the `e2e` job; `deploy` needs both `verify` and `e2e`.
 - Dependabot opens weekly PRs for npm (Angular packages grouped) and GitHub Actions.

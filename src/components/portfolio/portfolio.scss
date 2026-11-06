@@ -163,6 +163,32 @@
     }
 }
 
+// Sections fade in as they scroll into view. Pure CSS (scroll-driven animation), so there is nothing to hydrate; browsers without support
+// and visitors who prefer reduced motion simply see the sections right away.
+@supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+        .section__title,
+        .section__intro,
+        .about,
+        .skills,
+        .projects,
+        .hobbies,
+        .contact,
+        raspberry-spy-section {
+            animation: section-in linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 35%;
+        }
+    }
+}
+
+@keyframes section-in {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+}
+
 .about,
 .skills,
 .projects,

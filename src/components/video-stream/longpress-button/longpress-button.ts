@@ -3,8 +3,8 @@ import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core
 /** A button that keeps emitting `press` while it is held down (mouse, touch or pen), or once per Enter/Space */
 @Component({
     selector: 'longpress-button',
-    templateUrl: './longpress-button.component.html',
-    styleUrl: './longpress-button.component.scss',
+    templateUrl: './longpress-button.html',
+    styleUrl: './longpress-button.scss',
 })
 export class LongPressButton implements OnDestroy {
     @Input() intervalMs = 200

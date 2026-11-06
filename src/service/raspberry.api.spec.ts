@@ -24,6 +24,17 @@ describe('RaspberryApi', () => {
         expect(request.request.method).toBe('POST')
         expect(request.request.body).toEqual({ username: 'demo', password: 'secret' })
         expect(request.request.headers.has('Authorization')).toBe(false)
+        expect(request.request.withCredentials).toBe(true)
+    })
+
+    it('refreshes and logs out with the cookie of the API host', () => {
+        api.refresh().subscribe()
+        api.logout().subscribe()
+
+        const refresh = httpMock.expectOne(`${env.backendApiUrl}/refresh`)
+        const logout = httpMock.expectOne(`${env.backendApiUrl}/logout`)
+        expect([refresh.request.method, refresh.request.withCredentials]).toEqual(['POST', true])
+        expect([logout.request.method, logout.request.withCredentials]).toEqual(['POST', true])
     })
 
     it('calls the alarm endpoints without handling tokens itself', () => {

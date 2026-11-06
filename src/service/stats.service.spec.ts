@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http'
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { TestBed } from '@angular/core/testing'
 import { Subject } from 'rxjs'
 import { SocketService } from './socket.service'
@@ -10,12 +12,58 @@ describe('StatsService', () => {
     }
 
     let service: StatsService
+    let http: HttpTestingController
 
     beforeEach(() => {
         TestBed.configureTestingModule({
-            providers: [{ provide: SocketService, useValue: { listen: (name: string) => events[name].asObservable() } }],
+            providers: [
+                provideHttpClient(),
+                provideHttpClientTesting(),
+                { provide: SocketService, useValue: { listen: (name: string) => events[name].asObservable() } },
+            ],
         })
         service = TestBed.inject(StatsService)
+        http = TestBed.inject(HttpTestingController)
+    })
+
+    const sample = (cpuUsage: number, temperature: number | null = 21, humidity: number | null = 40) => ({
+        cpuUsage,
+        cpuTemperature: 50,
+        ramUsage: 30,
+        temperature,
+        humidity,
+        timestamp: 1,
+    })
+
+    describe('history from the Raspberry', () => {
+        it('fills the charts with what happened before the page was opened', () => {
+            http.expectOne(request => request.url.endsWith('/stats/history')).flush([sample(1), sample(2, null, null), sample(3)])
+
+            expect(service.cpuHistory()).toEqual([1, 2, 3])
+            expect(service.temperatureHistory()).toEqual([21, 21])
+            expect(service.humidityHistory()).toEqual([40, 40])
+        })
+
+        it('puts the history in front of values that arrived while it was loading', () => {
+            events['system_stats_update'].next({ cpuUsage: 99, cpuTemperature: 40, ramUsage: 30 })
+
+            http.expectOne(request => request.url.endsWith('/stats/history')).flush([sample(1), sample(2)])
+
+            expect(service.cpuHistory()).toEqual([1, 2, 99])
+        })
+
+        it('keeps at most 60 samples', () => {
+            http.expectOne(request => request.url.endsWith('/stats/history')).flush(Array.from({ length: 120 }, (_, i) => sample(i)))
+
+            expect(service.cpuHistory().length).toBe(60)
+            expect(service.cpuHistory()[59]).toBe(119)
+        })
+
+        it('starts empty when the Raspberry cannot tell', () => {
+            http.expectOne(request => request.url.endsWith('/stats/history')).flush('', { status: 404, statusText: 'Not Found' })
+
+            expect(service.cpuHistory()).toEqual([])
+        })
     })
 
     it('publishes the system stats and remembers when they arrived', () => {

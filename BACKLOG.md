@@ -37,7 +37,7 @@ The site is public, but Socket.IO used to have no auth: anyone could connect and
 - [x] FE: global `backend-status-banner` with "Retry now"; login shows the offline message instead of "Wrong credentials" and disables submit; greetings and alarms disable submit, and alarms reload automatically after the Pi comes back; the stream page disables "Camera ON" while offline.
 - [x] FE: `<video>` errors show a message and a Retry button, and trigger a health check to tell "Pi offline" from "stream not available".
 - [x] FE: the portfolio page works with the backend down and shows a live "Pi online/offline" badge in the Raspberry SPY section (done with F1).
-- [ ] FE: the control pad and brightness slider still look active while offline (their socket events are dropped silently) – disable them in F2.
+- [x] FE: the control pad and brightness slider are disabled with an explanation while offline or reconnecting (done in F2).
 - [ ] FE: replace the remaining `alert()` calls with toasts (F2).
 
 ### B3. Basic backend hardening [BE][FE] ✅ implemented (token refresh pending)
@@ -49,7 +49,7 @@ The site is public, but Socket.IO used to have no auth: anyone could connect and
 - [x] Bug found on the way: saving alarms through `POST /alarms` never reloaded the scheduler, so the new times only applied after a Flask restart. It now reloads.
 - [x] Frontend: login shows distinct messages for wrong credentials, too many attempts, offline and other errors; the greeting form shows a "too fast" message on 429; the mock server mirrors the new contract (`GET /greetings` needs a token, 500-character limit; `failWith: 429` simulates the limit).
 - [ ] **Manual:** add the Cloudflare rate-limiting rule described in `configs/CONFIGS.MD` as a second layer.
-- [ ] Refresh-token flow or silent re-login instead of the hard 30 minute logout and `alert()` warning (design needed: refresh tokens in an httpOnly cookie vs. a longer-lived access token; also affects the stream URL token).
+- [x] Refresh tokens: httpOnly, Secure, SameSite=Strict cookie (7 days, random, only hashes stored in `resources/refresh_tokens.json`), `POST /refresh` rotates it (30 s grace for tabs refreshing together), `POST /logout` revokes it. The UI renews the 30 minute access token 60 s before it expires, restores a session after the tab was closed, and the socket reconnects with the new token. The access token stays short-lived (30 min) because it also goes into the HLS URL. `/refresh` is rate limited (30/min per visitor) and `scripts/manage_users.py add` on an existing user revokes that user's sessions. Open: a video that plays longer than 30 min keeps its old URL token (unverified whether MediaMTX re-checks it for segments).
 - [ ] The JWT lives in `localStorage` and in the HLS URL query string (E2); consider short-lived stream-only tokens.
 - [ ] Rate limits survive restarts only with a persistent store (Redis/file); not needed for a single Pi unless the process restarts often.
 
@@ -72,7 +72,7 @@ Turn `/` (About me) into a personal **portfolio**, and keep the existing header 
 ```
 
 - Public tabs that exist today and where they go: **About me** -> becomes `/` itself; **Greet me** -> embedded as a "Say hi" widget in the Raspberry SPY project section and/or contact section (hidden/disabled when the backend is offline, see B2); **Login** -> small "Sign in" link in the portfolio footer/nav plus a button on the Raspberry SPY card ("Open the control panel").
-- Authorized shell: current `HeaderComponent` + `MobileNavComponent` + `Stats`, wrapped in a layout route (`/app` with `authGuard` on the parent) so the portfolio never renders them.
+- Authorized shell: current `Header` + `MobileNav` + `Stats`, wrapped in a layout route (`/app` with `authGuard` on the parent) so the portfolio never renders them.
 - Keep redirects for old URLs (`/video`, `/alarm`, `/greetings`, `/mobile-stats`) so existing bookmarks keep working.
 - Lazy-load the `/app/*` routes so the portfolio bundle stays small.
 - [x] Layout routes + route reshuffle: `/` portfolio, `/login`, guarded lazy `/app/*` shell, redirects for the old URLs, wildcard to `/`. (`AuthService.logout()` still goes to `/login`.)
@@ -81,8 +81,9 @@ Turn `/` (About me) into a personal **portfolio**, and keep the existing header 
 - [x] The hardcoded "24 year old" text is gone.
 - [x] Raspberry SPY section shows a live online/offline badge (re-checked every 30 s) and keeps working when the backend is down.
 - [ ] Review the draft copy (`portfolio.data.ts`, `portfolio.html`): it only uses facts from the GitHub profile, but the wording, the project selection and the order are a first proposal.
-- [ ] Add screenshots/GIFs for the other projects (Gadget, Connect Messenger, Macau) and optimize `public/img/me.jpg` further (WebP/AVIF, `srcset`) – part of F3.
-- [ ] The login page is still a plain full-height page with the old styling – redesign in F2.
+- [x] `me.jpg` is served as WebP 400/800 with `srcset` (done in F3; AVIF would save little more).
+- [ ] Add screenshots/GIFs for the other projects (Gadget, Connect Messenger, Macau): needs images from Filip.
+- [x] The login page got the card layout in F2.
 
 **Content, based on https://github.com/Filip1159** (verify and edit wording – nothing below is invented text for publication, just material found on the profile)
 
@@ -114,11 +115,13 @@ Verified in headless Chrome (light and dark, desktop and 390 px phone), with the
 - [x] Stats: the header dropdown is replaced by the `/app/stats` dashboard for all screen sizes: CPU, temperature (warm/hot hints), memory with meters, climate card, sparklines with 60 samples of history, Live/Reconnecting chip, "updated N s ago", warnings for stale data and a silent BLE sensor.
 - [x] Accessibility: landmarks and `main` ids with skip links, `aria-current` on the active tab, labelled icon buttons, live regions for statuses, visible focus, `prefers-reduced-motion`. Lighthouse accessibility 100 on the portfolio.
 - [x] Mobile pass on every page (compact header with theme toggle and sign out, bottom navigation, save bar above it).
-- [ ] Session expiry modal with "stay signed in": needs the token refresh from B3 (for now a warning toast and an expiry notice).
-- [ ] Stats: persist the history on the Raspberry (`/stats/history`) so the charts survive a page reload; thresholds for the sensor battery once the battery type is known.
-- [ ] Stream: a real "buffering" state for HLS stalls, a snapshot button, fullscreen button of our own (the native controls offer it).
-- [ ] Portfolio polish: project screenshots, subtle section transitions (respecting reduced motion), a light/dark preview image for social cards.
-- [ ] Visual regression: add Playwright screenshots of the main screens in both themes to CI (ties in with E1/E4).
+- [x] Session expiry modal: not needed anymore, the session renews itself (see B3); the expiry notice only appears when the refresh cookie is gone.
+- [x] Stats history: the backend keeps the last 120 samples (10 min, in memory) and serves them at `GET /stats/history` (JWT); `StatsService` seeds the sparklines with them, so a reload no longer empties the charts (mock server, contract test, unit and E2E tests included). Not persisted across a backend restart.
+- [ ] Stats: longer history (SQLite, see P2 uptime/history) and thresholds for the sensor battery once the battery type is known.
+- [x] Stream: "Buffering..." overlay while a live stream stalls (`waiting` event), a Snapshot button (saves the current frame as PNG; toast when the browser refuses because of CORS) and a Fullscreen button for the frame with its overlays. Not verified against the real HLS stream: if MediaMTX does not send CORS headers for the video the snapshot shows the error toast.
+- [x] Portfolio polish: sections fade in on scroll with a pure-CSS scroll-driven animation (`animation-timeline: view()`, only where supported and not with `prefers-reduced-motion`; nothing to hydrate).
+- [ ] Portfolio polish still open: project screenshots (need images from Filip) and a light/dark preview image for social cards (platforms show one static `og-image.jpg`, so this is probably not worth it).
+- [x] ~~Visual regression screenshots~~ dropped (decision: not worth the baseline maintenance; axe covers both themes).
 
 ### F3. SEO [FE] ✅ implemented (manual submission and polish pending)
 
@@ -129,7 +132,7 @@ The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pa
 - [x] The portfolio is pre-rendered at build time (`@angular/ssr`, static output, hydration): crawlers get the full HTML with a real 200. `index.csr.html` is copied to `404.html` for `/login` and `/app/*` only.
 - [x] `public/robots.txt` (disallows `/app/` and `/login`, links the sitemap) and `public/sitemap.xml`.
 - [ ] **Manual:** add `https://filipwisniewski.pl` to Google Search Console and Bing Webmaster Tools, verify the domain (DNS TXT record in Cloudflare) and submit the sitemap.
-- [x] Structured data: JSON-LD `WebSite` + `Person` (name, job title, employer, university, GitHub/LinkedIn as `sameAs`) in `index.html`. Not done: `SoftwareSourceCode`/`CreativeWork` entries for the featured projects.
+- [x] Structured data: JSON-LD `WebSite` + `Person` (name, job title, employer, university, GitHub/LinkedIn as `sameAs`) in `index.html`. Also nine `SoftwareSourceCode` entries (repository, language, description, author) for the featured projects.
 - [x] Performance: Roboto self-hosted (no Google Fonts requests), photos as WebP + JPEG fallback with `srcset`/`sizes`, explicit width/height, `fetchpriority="high"` on the hero image, lazy images below the fold, lazy `/app` routes, health check deferred to idle time, stylesheet budget raised to 4/8 kB.
 - [x] Semantic HTML: one `h1`, ordered headings, alt texts, links with distinct accessible names.
 - [x] One canonical host: apex domain (GitHub Pages redirects `www`).
@@ -150,34 +153,35 @@ The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pa
 - **Bugs the new tests found and fixed:**
     - The scheduler ignored the `enabled` flag, so alarms switched **off** still rang.
     - An empty alarm list (or none enabled) crashed `AlarmManager` at import, which would have stopped the whole backend from starting. No thread waits now when nothing is enabled; entries without the flag keep ringing.
-    - `GreetingsComponent`'s counter and Send button did not refresh after programmatic changes (zoneless change detection); it now reads a signal.
+    - `Greetings`'s counter and Send button did not refresh after programmatic changes (zoneless change detection); it now reads a signal.
     - The key handler of the stream page crashed on events without a target.
 - [x] First CI run on GitHub passed (verify 54 s, e2e 54 s, deploy 15 s).
 - [x] FE: `SocketService` is tested (token-driven connect, handshake auth, `unauthorized` logout, offline probing, emit guard; the socket comes from an injectable `SOCKET_FACTORY`) and `karma.conf.js` enforces coverage thresholds (80% statements/lines, 70% branches, 72% functions; now 86/89/73/75). Open: BE threshold, tests for `mock-server`.
-- [x] FE: Playwright E2E suite (28 test runs: 14 desktop flows, axe on every page in light and dark on desktop and a Pixel 7 phone, phone layout checks; ~16 s, `npm run e2e`) against the mock server: portfolio offline, theme persistence, login/logout/guard, wrong password, 429, session reload, stats over the socket, alarm save/discard, camera controls, offline banner and recovery. Own `e2e` job in CI; deploy waits for it. The axe run found a real contrast problem (inactive bottom-nav labels in the light theme), fixed. Open: screenshot comparisons (need baselines generated on the CI runner).
-- [ ] Contract test between `mock-server` and the real backend in fake mode (see E4).
+- [x] FE: Playwright E2E suite (28 test runs: 14 desktop flows, axe on every page in light and dark on desktop and a Pixel 7 phone, phone layout checks; ~16 s, `npm run e2e`) against the mock server: portfolio offline, theme persistence, login/logout/guard, wrong password, 429, session reload, stats over the socket, alarm save/discard, camera controls, offline banner and recovery. Own `e2e` job in CI; deploy waits for it. The axe run found a real contrast problem (inactive bottom-nav labels in the light theme), fixed.
+- [x] Contract test (`npm run contract`, `scripts/contract-test.mjs`): 11 checks of the REST and Socket.IO contract (status codes, error body shapes `{msg}` / `{error}`, JWT claims, alarm/greeting validation, socket handshake, stats events). Passes against `mock-server` and the FastAPI backend in fake mode. Not in CI yet: it needs both repos checked out.
 - [x] Karma/Jasmine replaced by Vitest + jsdom (`runner: vitest` in `angular.json`): the suite runs in ~2 s without a browser; `karma*`, `jasmine*` and `@angular-devkit/build-angular` are gone (the app builds with `@angular/build`). Coverage thresholds moved to `coverageThresholds` in `angular.json` (v8 numbers: 82% statements, 80% lines, 86% branches, 83% functions).
-- [ ] BE: run the suite on Python 3.13 as well as 3.11, and add tests that mock `gpiozero`/`RPLCD` to cover `hardware/raspberry.py`.
+- [x] BE: CI runs the suite on Python 3.11 and 3.13 (both pass locally), and `tests/test_raspberry_hardware.py` covers `hardware/raspberry.py` (92%) with mocked `gpiozero`/`RPLCD`/`bleak`/`rpi_hardware_pwm`; the coverage `omit` is gone.
 
 ### E2. Frontend cleanups [FE]
 
 - [x] `authInterceptor` attaches the bearer token and signs the user out on 401 (with a toast); `RaspberryApi` no longer takes tokens (spec added).
 - [x] Stats subscriptions live in the root `StatsService` (one subscription per event for the app's lifetime, signals for the page); the old `effect()` subscriptions are gone.
 - [x] `npm start` serves on localhost (no hardcoded host); running against the Pi is documented in `AGENTS.md`. Still open: the Pi's LAN IP stays in `environment.ts`.
-- [ ] Unify file naming (`*.component.ts` vs plain names) and selectors; update README (still has old structure/links).
+- [x] File and class naming unified: no more `*.component.*` files or `…Component` classes (`alarm.ts` exports `AlarmCard`). Selectors left as they are (mix of `app-*` and plain) on purpose.
+- [x] README: current features, development commands, CI/deploy notes.
 - [ ] Don't pass the JWT in a query string longer than necessary: investigate MediaMTX `authHTTP`/short-lived stream tokens or cookie-based auth for HLS (the long-lived token currently appears in URLs and could end up in logs).
 
 ### E3. Backend cleanups & ops [BE]
 
-- [ ] Replace hardcoded `/home/fwisn/Documents/camera-app/...` paths with a single config module (env vars with sensible defaults); fix the relative `./resources/greetings.json` path.
+- [x] Hardcoded paths: all of them live in `app/config.py` now (env overridable, done with E4); no `/home/fwisn` or relative data paths are left.
 - [x] The committed virtualenv is gone: untracked and gitignored (`bin/`, `lib64`, `pyvenv.cfg`), the Pi runs from `.venv` (`scripts/setup_venv.sh`), ruff targets py311 (Pi 3.11.2, CI 3.11).
 - [x] The backend runs as a `systemd` service: `configs/raspberry-spy.service` (template), `scripts/install_service.sh` (fills in user/checkout/python, enables, starts; `--print` to preview) and `scripts/deploy.sh` (pull, install changed requirements, restart, wait for `/health`), documented in `configs/CONFIGS.MD`. Not run on the Pi yet (the unit was only rendered here). `cloudflared` already is a service; nginx is enabled on boot.
 - [x] MediaMTX runs as a `systemd` service too: `configs/mediamtx.service` and `scripts/install_mediamtx_service.sh` (copies `configs/mediamtx.yml` to `/mediamtx`, installs and restarts the unit; `deploy.sh` reminds you when the config changed). Not run on the Pi yet.
 - [x] `AlarmManager.reload()` no longer deadlocks when a reload coincides with an alarm ringing: reloads are serialized by their own lock, the old thread is joined **outside** the lock that guards the schedule, and every scheduler thread has its own stop event (regression test `test_reloading_while_an_alarm_is_ringing_does_not_deadlock`, verified to fail on the old code). Matters most for the FastAPI version, where a stuck reload would hold a worker thread of the pool.
-- [ ] Make the BLE thread robust (a malformed packet raises in `__parse_response` and should not break the loop), and expose "stale" data (>N min old) to the UI.
-- [ ] Replace `os.system('... sudo tee ...')` for the ACT LED with a udev/group-permission approach or `gpiozero`/sysfs write without sudo.
-- [ ] Finish or remove the draft Arduino Uno R4 websocket manager (`websocket_manager.py`); `send()` is currently broken (`connected_device.send` is not awaited).
-- [ ] Remove dead commented-out code in `gpio.py`; `logging` instead of `print`.
+- [x] BLE robustness: `app/climate.py` parses packets without raising (format and plausible ranges checked, bad packets logged, previous values kept), the scan loop catches everything (adapter off, bluez restart) and retries after 5 s with `logging` instead of `print`. `ble_update` has a new `stale` flag (no reading yet or older than `CLIMATE_STALE_SECONDS`, default 300); the UI does not use it yet. Verified with mocked bleak, not on the real sensor.
+- [x] ACT LED without sudo: direct sysfs writes (`app/hardware/sysfs_led.py`), permission via `configs/99-act-led.rules` (udev, group `gpio`); without it the LED is left alone with one log warning. **Manual on the Pi:** install the rule (steps in `configs/CONFIGS.MD`); not run on real hardware yet.
+- [x] Arduino websocket manager: kept but **off by default** (`ARDUINO_WEBSOCKET=1` enables it; it listens on all interfaces without authentication), `send()` is awaited and thread-safe sending exists, `logging` instead of `print`. Still only logs what the Arduino sends: remove it if the Uno R4 idea is dead.
+- [x] No dead code left in `app/gpio/`; no `print` calls in the app.
 - [x] Greetings and alarms JSON writes (HTTP) are locked and atomic (`app/json_store.py`); `AlarmManager.save_day` (LCD) still writes directly.
 
 ### E5. Backend: move from Flask to FastAPI [BE] ✅ done (follow-ups open)
@@ -188,10 +192,10 @@ Decision: rewrite the backend with FastAPI in the same repo, keeping the API con
 - [x] Cutover prepared: `python main.py` is the FastAPI app (the Flask version stays as `main_flask.py` for rollback), nginx serves `/api` and the old `/flask` alias, the frontend calls `/api`, docs updated (`configs/CONFIGS.MD` has the Pi steps). Deploy order: backend + nginx on the Pi first, then the frontend.
 - [ ] Verify on the Raspberry for real (`git pull`, `pip install -r requirements-raspberry.txt`, `python main.py`): nothing hardware-related could be exercised off the Pi (uvicorn + LCD thread + GPIO + BLE thread together, `asyncio.to_thread` for servos).
 - [x] Flask removed (`main_flask.py`, `app/server.py`, `app/controller/`, `app/rate_limit.py`, Flask requirements, Flask-only tests, the `/flask` nginx alias): 89 tests, `requirements.txt` now lists only direct dependencies. Manual: add `/api/login` and `/api/greetings` to the Cloudflare rate-limiting rule if not done, and copy the new `configs/default` to the Pi (drops the `/flask` alias; not urgent).
-- [ ] Contract test (see E4): run the same request script against the FastAPI backend (fake mode) and `mock-server`.
-- [ ] Move the import-time singletons (`alarm_manager`, `melody_player`, `servos_controller`) into the FastAPI lifespan / dependency injection, so the E3 deadlock fix and test isolation get easier.
+- [x] Contract test: the same script (`npm run contract` in the frontend repo) passes against the FastAPI backend (fake mode) and `mock-server`.
+- [x] Import-time singletons are gone: `get_services()` (`app/services.py`) creates `MelodyPlayer`, `AlarmManager` and `ServosController` lazily (the lifespan at startup); `AlarmManager(player, alarms_file)` takes its dependencies, so tests build isolated instances.
 - [ ] Use FastAPI's strengths after the cutover: typed Pydantic models + OpenAPI as the contract (generate the Angular API client or `openapi.yaml` for the mock), `/docs` behind login, async-friendly stats history (E3/P2). Note: Pydantic validation would change error bodies from 400 `{'error'}` to 422; decide together with the frontend.
-- [ ] systemd unit for uvicorn (E3) and `API_DOCS=0` in production (default on the Pi).
+- [x] systemd unit for uvicorn (E3); `/docs` is off by default on the Pi (`API_DOCS` defaults to 0 outside fake mode).
 
 ### E4. Run both apps without a Raspberry [BE][FE] ✅ implemented (optional parts pending)
 
@@ -207,8 +211,8 @@ Fresh clone on any machine: the backend runs with simulated hardware and the UI 
 - [x] `scripts/dev_setup.py` generates the RS256 key pair, `users.json` (demo / demo), alarms and greetings.
 - [x] No `sudo`/`os.system` outside the Raspberry implementation; CPU temperature falls back to a simulated value.
 - [x] Tests (`tests/`, 24 tests: API, JWT/CORS, socket auth, fake hardware, LCD navigation) and a backend GitHub Actions workflow (ruff + pytest, Python 3.11, core requirements only).
-- [ ] Camera/HLS for local dev with a real picture: `docker-compose.dev.yml` with MediaMTX + an ffmpeg test source publishing to `cam1`, with `authJWTJWKS` pointing at the local Flask. (Without it the UI uses the generated test pattern.)
-- [ ] Replace the remaining import-time singletons (`alarm_manager`, `melody_player`, `servos_controller`) with a small container created in `main.py`, so tests can build isolated instances.
+- [x] Camera/HLS for local dev: `docker-compose.dev.yml` + `configs/mediamtx.dev.yml` (MediaMTX with the JWT check against the local backend's JWKS + an ffmpeg test pattern published to `cam1`). **Not run** (no Docker daemon was available when it was written).
+- [x] Container for the singletons: see E5 (`get_services()`).
 - [ ] Verify on Windows (paths, `Timer`, signals); only macOS/Linux were exercised.
 - [ ] Pi: run the new code on the real hardware once (nothing in `app/hardware/raspberry.py` could be executed here), then update the deploy notes if needed.
 
@@ -218,7 +222,8 @@ Fresh clone on any machine: the backend runs with simulated hardware and the UI 
 - [x] Angular `mock` configuration (`environment.mock.ts`, `angular.json`), `npm run start:mock` (mock server + `ng serve`) and `npm run start:ui` (UI only, for the real backend in fake mode). Fixing the hardcoded LAN IP in `npm start` stays with E2.
 - [x] Stream page in mock mode shows a generated test pattern (lazy-loaded `mock-camera.ts`) instead of HLS.
 - [x] Failure simulation through `POST /__mock/config` (`offline`, `latencyMs`, `failWith`), documented in `AGENTS.md`; `offline` drops sockets abruptly like a dead Pi.
-- [ ] Contract in one place: `openapi.yaml` for REST plus a socket events section, and a contract test that runs the mock server and the real backend (fake mode) against the same requests.
+- [x] Contract test runs against the mock server and the real backend (fake mode), see E1.
+- [ ] Contract in one place: `openapi.yaml` for REST plus a socket events section (FastAPI can generate it).
 - [x] Mock server and Playwright flows run in CI (E1). The flow was verified manually with a headless-Chrome script (login, wrong password, stats, camera, alarms, offline banner and recovery) against both the mock server and the fake-mode backend.
 
 **Acceptance criteria – verified:** `pip install -r requirements.txt` + `python scripts/dev_setup.py` + `python main.py --fake` starts the backend on a laptop; `npm ci && npm run start:mock` starts the UI, and login, alarms, stats, camera controls and the offline simulation work; the UI also works against the fake-mode backend. Behavior on the real Pi should be unchanged but is unverified until the next deploy.

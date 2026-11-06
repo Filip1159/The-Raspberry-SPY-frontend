@@ -1,7 +1,7 @@
 import { Component, effect, HostListener, inject, OnInit, signal, untracked } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms'
-import { AlarmComponent } from './alarm/alarm.component'
+import { AlarmCard } from './alarm/alarm'
 import { Alarm, RaspberryApi } from '../../service/raspberry.api'
 import { BACKEND_OFFLINE_MESSAGE, BackendStatusService, isBackendUnreachable } from '../../service/backend-status.service'
 import { ToastService } from '../../service/toast.service'
@@ -10,11 +10,11 @@ import { HasUnsavedChanges } from '../../service/unsaved-changes.guard'
 @Component({
     selector: 'alarm-manager',
     standalone: true,
-    imports: [AlarmComponent],
-    templateUrl: './alarm-manager.component.html',
-    styleUrl: './alarm-manager.component.scss',
+    imports: [AlarmCard],
+    templateUrl: './alarm-manager.html',
+    styleUrl: './alarm-manager.scss',
 })
-export class AlarmManagerComponent implements OnInit, HasUnsavedChanges {
+export class AlarmManager implements OnInit, HasUnsavedChanges {
     private api = inject(RaspberryApi)
     private formBuilder = inject(FormBuilder)
     private toasts = inject(ToastService)

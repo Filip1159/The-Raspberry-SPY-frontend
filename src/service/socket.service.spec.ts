@@ -73,6 +73,20 @@ describe('SocketService', () => {
         expect(socket.disconnect).toHaveBeenCalled()
     })
 
+    it('reconnects with the new token when the token is renewed', () => {
+        create()
+        token.set('first')
+        TestBed.tick()
+        socket.disconnect.mockClear()
+        socket.connect.mockClear()
+
+        token.set('renewed')
+        TestBed.tick()
+
+        expect(socket.disconnect).toHaveBeenCalled()
+        expect(socket.connect).toHaveBeenCalled()
+    })
+
     it('hands the current token to the handshake', () => {
         create()
         token.set('fresh')

@@ -11,7 +11,7 @@ import { faChartLine, faHouse, faUserSecret } from '@fortawesome/free-solid-svg-
     templateUrl: './mobile-nav.html',
     styleUrl: './mobile-nav.scss',
 })
-export class MobileNavComponent {
+export class MobileNav {
     faAlarmClock = faAlarmClock
     faUserSecret = faUserSecret
     faChartLine = faChartLine

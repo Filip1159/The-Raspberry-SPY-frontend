@@ -5,7 +5,7 @@ import { env } from './../environment'
 import { AuthService } from './auth.service'
 import { ToastService } from './toast.service'
 
-const PUBLIC_PATHS = ['/login', '/health', '/greetings']
+const PUBLIC_PATHS = ['/login', '/refresh', '/logout', '/health', '/greetings']
 
 function needsToken(url: string, method: string): boolean {
     if (!url.startsWith(env.backendApiUrl)) return false

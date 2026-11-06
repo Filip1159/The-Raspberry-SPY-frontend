@@ -5,13 +5,13 @@ import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { env } from '../../environment'
 import { BackendStatusService } from '../../service/backend-status.service'
 import { ToastService } from '../../service/toast.service'
-import { GreetingsComponent } from './greetings.component'
+import { Greetings } from './greetings'
 
-describe('GreetingsComponent', () => {
+describe('Greetings', () => {
     const url = `${env.backendApiUrl}/greetings`
 
-    let component: GreetingsComponent
-    let fixture: ComponentFixture<GreetingsComponent>
+    let component: Greetings
+    let fixture: ComponentFixture<Greetings>
     let httpMock: HttpTestingController
     let toasts: ToastService
 
@@ -19,13 +19,13 @@ describe('GreetingsComponent', () => {
 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
-            imports: [GreetingsComponent],
+            imports: [Greetings],
             providers: [provideHttpClient(), provideHttpClientTesting()],
         }).compileComponents()
 
         httpMock = TestBed.inject(HttpTestingController)
         toasts = TestBed.inject(ToastService)
-        fixture = TestBed.createComponent(GreetingsComponent)
+        fixture = TestBed.createComponent(Greetings)
         component = fixture.componentInstance
         fixture.detectChanges()
     })

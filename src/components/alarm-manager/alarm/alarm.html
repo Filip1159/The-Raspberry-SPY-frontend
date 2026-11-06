@@ -23,7 +23,7 @@
         <label class="alarm__label" [for]="'melody-' + day">Melody</label>
         <select class="field__input alarm__melody" [id]="'melody-' + day" (change)="setMelody($event)">
             @for (m of melodies; track m) {
-                <option [value]="m" [selected]="m === form.value.melody">{{ m }}</option>
+            <option [value]="m" [selected]="m === form.value.melody">{{ m }}</option>
             }
         </select>
         <button

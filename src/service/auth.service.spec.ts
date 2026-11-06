@@ -1,5 +1,7 @@
 import { Mock, vi } from 'vitest'
+import { HttpErrorResponse } from '@angular/common/http'
 import { TestBed } from '@angular/core/testing'
+import { of, throwError } from 'rxjs'
 import { Router } from '@angular/router'
 import { AuthService } from './auth.service'
 import { RaspberryApi } from './raspberry.api'
@@ -14,13 +16,14 @@ function tokenExpiringIn(seconds: number): string {
 describe('AuthService', () => {
     let navigate: Mock
     let toasts: ToastService
+    let api: { login: Mock; refresh: Mock; logout: Mock }
 
     function createService(storedToken?: string): AuthService {
         if (storedToken) localStorage.setItem('jwt', storedToken)
         TestBed.configureTestingModule({
             providers: [
                 { provide: Router, useValue: { navigate: navigate } },
-                { provide: RaspberryApi, useValue: { login: () => undefined } },
+                { provide: RaspberryApi, useValue: api },
             ],
         })
         toasts = TestBed.inject(ToastService)
@@ -30,6 +33,7 @@ describe('AuthService', () => {
     beforeEach(() => {
         localStorage.removeItem('jwt')
         navigate = vi.fn()
+        api = { login: vi.fn(), refresh: vi.fn(), logout: vi.fn(() => of(undefined)) }
         vi.useFakeTimers()
     })
 
@@ -52,12 +56,104 @@ describe('AuthService', () => {
         expect(createService('not-a-jwt').isLoggedIn()).toBe(false)
     })
 
-    it('logs out right away when the stored token has already expired', () => {
+    it('is signed out when the stored token has already expired, but remembers that there was a session', () => {
         const service = createService(tokenExpiringIn(-10))
 
         expect(service.isLoggedIn()).toBe(false)
         expect(service.token()).toBeNull()
-        expect(navigate).toHaveBeenCalledWith(['/login'])
+        expect(service.hasStaleSession()).toBe(true)
+        expect(navigate).not.toHaveBeenCalled()
+    })
+
+    it('has no stale session without a stored token', () => {
+        expect(createService().hasStaleSession()).toBe(false)
+    })
+
+    describe('silent sign-in with the refresh cookie', () => {
+        it('restores the session after the access token expired', async () => {
+            const fresh = tokenExpiringIn(1800)
+            const service = createService(tokenExpiringIn(-10))
+            api.refresh.mockReturnValue(of({ access_token: fresh }))
+
+            expect(await service.restoreSession()).toBe(true)
+
+            expect(service.isLoggedIn()).toBe(true)
+            expect(localStorage.getItem('jwt')).toBe(fresh)
+        })
+
+        it('forgets the stale session when the refresh cookie is gone', async () => {
+            const service = createService(tokenExpiringIn(-10))
+            api.refresh.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })))
+
+            expect(await service.restoreSession()).toBe(false)
+
+            expect(service.hasStaleSession()).toBe(false)
+        })
+    })
+
+    describe('renewing the token while the user is active', () => {
+        it('gets a new token a minute before the old one ends, without any warning', () => {
+            const service = createService()
+            service.saveToken(tokenExpiringIn(300))
+            const renewed = tokenExpiringIn(1800)
+            api.refresh.mockReturnValue(of({ access_token: renewed }))
+
+            vi.advanceTimersByTime(239_000)
+            expect(api.refresh).not.toHaveBeenCalled()
+
+            vi.advanceTimersByTime(2_000)
+            expect(api.refresh).toHaveBeenCalledTimes(1)
+            expect(service.token()).toBe(renewed)
+
+            vi.advanceTimersByTime(299_000)
+            expect(toasts.toasts()).toEqual([])
+            expect(service.isLoggedIn()).toBe(true)
+        })
+
+        it('signs the user out with a notice when the refresh cookie is no longer valid', () => {
+            const service = createService()
+            service.saveToken(tokenExpiringIn(120))
+            api.refresh.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })))
+
+            vi.advanceTimersByTime(61_000)
+
+            expect(service.isLoggedIn()).toBe(false)
+            expect(toasts.toasts().map(t => t.kind)).toEqual(['info'])
+            expect(navigate).toHaveBeenCalledWith(['/login'])
+        })
+
+        it('keeps trying while the Raspberry is unreachable and still warns before the end', () => {
+            const service = createService()
+            service.saveToken(tokenExpiringIn(120))
+            api.refresh.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })))
+
+            vi.advanceTimersByTime(61_000)
+            expect(api.refresh).toHaveBeenCalledTimes(1)
+            expect(service.isLoggedIn()).toBe(true)
+
+            vi.advanceTimersByTime(15_000)
+            expect(api.refresh).toHaveBeenCalledTimes(2)
+
+            // the Raspberry is back
+            const renewed = tokenExpiringIn(1800)
+            api.refresh.mockReturnValue(of({ access_token: renewed }))
+            vi.advanceTimersByTime(15_000)
+            expect(service.token()).toBe(renewed)
+        })
+    })
+
+    it('revokes the refresh cookie on logout', () => {
+        const service = createService(tokenExpiringIn(600))
+
+        service.logout()
+
+        expect(api.logout).toHaveBeenCalled()
+    })
+
+    it('does not call the backend when logging out without a session', () => {
+        createService().logout()
+
+        expect(api.logout).not.toHaveBeenCalled()
     })
 
     it('stores the token on login and removes it on logout', () => {
@@ -74,9 +170,11 @@ describe('AuthService', () => {
         expect(navigate).toHaveBeenCalledWith(['/login'])
     })
 
-    it('warns 15 seconds before the session ends and then logs out', () => {
+    it('warns 15 seconds before the session ends when it cannot be renewed, and then logs out', () => {
         const service = createService()
         service.saveToken(tokenExpiringIn(60))
+
+        api.refresh.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 }))) // Raspberry offline: no renewal possible
 
         vi.advanceTimersByTime(44_000)
         expect(toasts.toasts()).toEqual([])

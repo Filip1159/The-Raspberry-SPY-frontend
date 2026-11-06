@@ -21,13 +21,13 @@ export const routes: Routes = [
             {
                 path: 'video',
                 title: 'Live stream – The Raspberry SPY',
-                loadComponent: () => import('./components/video-stream/video-stream.component').then(m => m.VideoStreamComponent),
+                loadComponent: () => import('./components/video-stream/video-stream').then(m => m.VideoStream),
             },
             {
                 path: 'alarm',
                 title: 'Alarms – The Raspberry SPY',
                 canDeactivate: [unsavedChangesGuard],
-                loadComponent: () => import('./components/alarm-manager/alarm-manager.component').then(m => m.AlarmManagerComponent),
+                loadComponent: () => import('./components/alarm-manager/alarm-manager').then(m => m.AlarmManager),
             },
             {
                 path: 'stats',

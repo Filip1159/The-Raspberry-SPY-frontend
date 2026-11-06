@@ -53,12 +53,17 @@ export class SocketService {
             }
         })
 
+        let connectedWith: string | null = null
         effect(() => {
-            if (this.auth.token()) {
+            const token = this.auth.token()
+            if (token) {
+                // The backend ties the session to the token it saw in the handshake: a renewed token needs a new handshake
+                if (connectedWith && connectedWith !== token) this.socket.disconnect()
                 this.socket.connect()
             } else {
                 this.socket.disconnect()
             }
+            connectedWith = token
         })
     }
 

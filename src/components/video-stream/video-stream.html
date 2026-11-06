@@ -13,60 +13,52 @@
                 aria-label="Live camera stream"
                 (error)="onVideoError()"></video>
 
-            @switch (state()) {
-                @case ('off') {
-                    <div class="stream__overlay">
-                        <fa-icon [icon]="faVideoSlash" size="3x" />
-                        <p>The camera is off</p>
-                        <button class="button" type="button" [disabled]="backendStatus.isOffline()" (click)="cameraOn()">
-                            <fa-icon [icon]="faVideo" /> Turn the camera on
-                        </button>
-                    </div>
-                }
-                @case ('connecting') {
-                    <div class="stream__overlay">
-                        <div class="spinner"></div>
-                        <p>Connecting to the camera...</p>
-                    </div>
-                }
-                @case ('error') {
-                    <div class="stream__overlay">
-                        <p class="stream__error">
-                            {{ backendStatus.isOffline() ? offlineMessage : 'The stream is unavailable. The camera may still be starting up.' }}
-                        </p>
-                        <button class="button" type="button" (click)="cameraOn()">Try again</button>
-                    </div>
-                }
-                @case ('live') {
-                    <span class="stream__live"><span class="stream__live__dot"></span> LIVE</span>
-                }
-            }
+            @switch (state()) { @case ('off') {
+            <div class="stream__overlay">
+                <fa-icon [icon]="faVideoSlash" size="3x" />
+                <p>The camera is off</p>
+                <button class="button" type="button" [disabled]="backendStatus.isOffline()" (click)="cameraOn()">
+                    <fa-icon [icon]="faVideo" /> Turn the camera on
+                </button>
+            </div>
+            } @case ('connecting') {
+            <div class="stream__overlay">
+                <div class="spinner"></div>
+                <p>Connecting to the camera...</p>
+            </div>
+            } @case ('error') {
+            <div class="stream__overlay">
+                <p class="stream__error">
+                    {{ backendStatus.isOffline() ? offlineMessage : 'The stream is unavailable. The camera may still be starting up.' }}
+                </p>
+                <button class="button" type="button" (click)="cameraOn()">Try again</button>
+            </div>
+            } @case ('live') {
+            <span class="stream__live"><span class="stream__live__dot"></span> LIVE</span>
+            @if (buffering()) {
+            <div class="stream__overlay stream__overlay--buffering" role="status">
+                <div class="spinner"></div>
+                <p>Buffering...</p>
+            </div>
+            } } }
         </div>
 
         <div class="stream__toolbar">
             @if (state() === 'off') {
-                <p class="stream__hint">Only signed-in users can see the stream.</p>
+            <p class="stream__hint">Only signed-in users can see the stream.</p>
             } @else {
-                <button class="button button--secondary" type="button" (click)="cameraOff()">
-                    <fa-icon [icon]="faVideoSlash" /> Turn the camera off
-                </button>
+            <button class="button button--secondary" type="button" (click)="cameraOff()">
+                <fa-icon [icon]="faVideoSlash" /> Turn the camera off
+            </button>
+            <button class="button button--secondary" type="button" [disabled]="state() !== 'live'" (click)="takeSnapshot()">
+                <fa-icon [icon]="faCamera" /> Snapshot
+            </button>
+            <button class="button button--secondary" type="button" (click)="toggleFullscreen()"><fa-icon [icon]="faExpand" /> Fullscreen</button>
             }
         </div>
         <p class="sr-only" role="status">
-            @switch (state()) {
-                @case ('live') {
-                    The camera stream is live
-                }
-                @case ('connecting') {
-                    Connecting to the camera
-                }
-                @case ('error') {
-                    The stream is unavailable
-                }
-                @default {
-                    The camera is off
-                }
-            }
+            @switch (state()) { @case ('live') { The camera stream is live } @case ('connecting') { Connecting to the camera } @case ('error') { The
+            stream is unavailable } @default { The camera is off } }
         </p>
     </section>
 
@@ -74,13 +66,10 @@
         <h2 id="controls-title" class="stream__controls__title">Camera controls</h2>
 
         @if (!canControl()) {
-            <p class="notice" role="status">
-                {{
-                    backendStatus.isOffline()
-                        ? offlineMessage
-                        : 'Reconnecting to the Raspberry... the controls are paused until the connection is back.'
-                }}
-            </p>
+        <p class="notice" role="status">
+            {{ backendStatus.isOffline() ? offlineMessage : 'Reconnecting to the Raspberry... the controls are paused until the connection is back.'
+            }}
+        </p>
         }
 
         <div class="stream__pad" role="group" aria-label="Move the camera">

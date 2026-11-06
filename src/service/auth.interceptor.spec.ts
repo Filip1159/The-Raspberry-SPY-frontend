@@ -46,11 +46,13 @@ describe('authInterceptor', () => {
     it('leaves public calls alone', () => {
         http.post(`${env.backendApiUrl}/login`, {}).subscribe()
         http.post(`${env.backendApiUrl}/greetings`, {}).subscribe()
+        http.post(`${env.backendApiUrl}/refresh`, {}).subscribe()
+        http.post(`${env.backendApiUrl}/logout`, {}).subscribe()
         http.get(`${env.backendApiUrl}/health`).subscribe()
         http.get('https://example.com/alarms').subscribe()
 
         const requests = httpMock.match(() => true)
-        expect(requests.length).toBe(4)
+        expect(requests.length).toBe(6)
         expect(requests.some(r => r.request.headers.has('Authorization'))).toBe(false)
     })
 

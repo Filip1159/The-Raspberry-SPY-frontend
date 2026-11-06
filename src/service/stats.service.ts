@@ -1,4 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core'
+import { catchError, EMPTY } from 'rxjs'
+import { RaspberryApi, StatsSample } from './raspberry.api'
 import { SocketService } from './socket.service'
 
 interface BleUpdatePayload {
@@ -27,6 +29,7 @@ function push(history: number[], value: number | null): number[] {
 @Injectable({ providedIn: 'root' })
 export class StatsService {
     private socket = inject(SocketService)
+    private api = inject(RaspberryApi)
 
     readonly cpuUsage = signal<number | null>(null)
     readonly cpuTemperature = signal<number | null>(null)
@@ -47,6 +50,8 @@ export class StatsService {
     readonly humidityHistory = signal<number[]>([])
 
     constructor() {
+        this.loadHistory()
+
         this.socket.listen<SystemStatsUpdatePayload>('system_stats_update').subscribe(payload => {
             this.cpuUsage.set(payload.cpuUsage)
             this.cpuTemperature.set(payload.cpuTemperature)
@@ -66,6 +71,51 @@ export class StatsService {
             this.humidityHistory.update(history => push(history, payload.humidity))
         })
     }
+
+    /** Fetches what the Raspberry remembers; without it (offline, older backend) the charts simply start empty */
+    private loadHistory(): void {
+        this.api
+            .getStatsHistory()
+            .pipe(catchError(() => EMPTY))
+            .subscribe(samples => {
+                const series = (pick: (sample: StatsSample) => number | null) => samples.map(pick).filter((value): value is number => value !== null)
+                this.cpuHistory.update(current =>
+                    withEarlier(
+                        series(sample => sample.cpuUsage),
+                        current
+                    )
+                )
+                this.cpuTemperatureHistory.update(current =>
+                    withEarlier(
+                        series(sample => sample.cpuTemperature),
+                        current
+                    )
+                )
+                this.ramHistory.update(current =>
+                    withEarlier(
+                        series(sample => sample.ramUsage),
+                        current
+                    )
+                )
+                this.temperatureHistory.update(current =>
+                    withEarlier(
+                        series(sample => sample.temperature),
+                        current
+                    )
+                )
+                this.humidityHistory.update(current =>
+                    withEarlier(
+                        series(sample => sample.humidity),
+                        current
+                    )
+                )
+            })
+    }
+}
+
+/** Samples of the same series from before this page was opened go in front of what arrived live meanwhile */
+function withEarlier(earlier: number[], current: number[]): number[] {
+    return [...earlier, ...current].slice(-HISTORY_LENGTH)
 }
 
 /** Seconds since a HH:MM:SS time of day (today, or yesterday when the time is "in the future") */

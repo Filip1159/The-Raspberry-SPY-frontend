@@ -15,10 +15,10 @@ const MAX_GREETING_LENGTH = 500
     selector: 'greetings',
     standalone: true,
     imports: [FontAwesomeModule, ReactiveFormsModule],
-    templateUrl: './greetings.component.html',
-    styleUrl: './greetings.component.scss',
+    templateUrl: './greetings.html',
+    styleUrl: './greetings.scss',
 })
-export class GreetingsComponent {
+export class Greetings {
     private api = inject(RaspberryApi)
     private toasts = inject(ToastService)
     backendStatus = inject(BackendStatusService)
