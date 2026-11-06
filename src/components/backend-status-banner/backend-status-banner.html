@@ -1,0 +1,6 @@
+@if (backendStatus.isOffline()) {
+    <div class="banner" role="status" aria-live="polite">
+        <span class="banner__text">The Raspberry is probably switched off or offline, so live features are unavailable. Retrying automatically...</span>
+        <button class="banner__retry" type="button" (click)="backendStatus.check()">Retry now</button>
+    </div>
+}

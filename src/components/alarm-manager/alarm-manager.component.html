@@ -1,4 +1,7 @@
 <main class="alarmManager content">
+    @if (loadError(); as message) {
+        <p class="alarmManager__error">{{ message }}</p>
+    }
     <div class="alarmManager__alarms">
         @for (alarm of alarmsSignal(); track alarm.value.day) {
             <app-alarm [form]="alarm"></app-alarm>
@@ -6,6 +9,6 @@
     </div>
     
     <div class="alarmManager__buttonWrapper">
-        <button class="button" (click)="save()">Save</button>
+        <button class="button" [disabled]="backendStatus.isOffline() || loadError() !== null" (click)="save()">Save</button>
     </div>
 </main>

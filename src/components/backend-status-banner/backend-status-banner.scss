@@ -1,0 +1,31 @@
+.banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background-color: #fff3cd;
+    color: #664d03;
+    border-bottom: 1px solid #ffda6a;
+    font-size: 16px;
+
+    &__text {
+        text-align: center;
+    }
+
+    &__retry {
+        padding: 4px 12px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #664d03;
+        background: transparent;
+        border: 1px solid #664d03;
+        border-radius: 6px;
+        cursor: pointer;
+
+        &:hover {
+            background-color: #ffe69c;
+        }
+    }
+}

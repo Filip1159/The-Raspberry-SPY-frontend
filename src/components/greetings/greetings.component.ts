@@ -3,6 +3,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import { RaspberryApi } from '../../service/raspberry.api'
+import { BACKEND_OFFLINE_MESSAGE, BackendStatusService, isBackendUnreachable } from '../../service/backend-status.service'
 
 @Component({
     selector: 'greetings',
@@ -13,6 +14,8 @@ import { RaspberryApi } from '../../service/raspberry.api'
 })
 export class GreetingsComponent {
     private api = inject(RaspberryApi)
+    backendStatus = inject(BackendStatusService)
+    offlineMessage = BACKEND_OFFLINE_MESSAGE
 
     faPaperPlane = faPaperPlane
 
@@ -26,7 +29,7 @@ export class GreetingsComponent {
                 alert('Greeting send! Thank you!')
                 this.form.controls.text.reset()
             },
-            error: () => alert('Failed to save greeting :( My bad...'),
+            error: err => alert(isBackendUnreachable(err) ? BACKEND_OFFLINE_MESSAGE : 'Failed to save greeting :( My bad...'),
         })
     }
 }

@@ -1,4 +1,5 @@
-import { Component, effect, ElementRef, HostListener, inject, signal } from '@angular/core'
+import { Component, ElementRef, HostListener, inject, signal } from '@angular/core'
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faBolt, faMicrochip } from '@fortawesome/free-solid-svg-icons'
 import { faCloud } from '@fortawesome/free-regular-svg-icons'
@@ -46,19 +47,23 @@ export class Stats {
     lastUpdated = signal<string | null>(null)
 
     constructor() {
-        effect(() => {
-            this.socketService.listen<SystemStatsUpdatePayload>('system_stats_update').subscribe(payload => {
+        this.socketService
+            .listen<SystemStatsUpdatePayload>('system_stats_update')
+            .pipe(takeUntilDestroyed())
+            .subscribe(payload => {
                 this.cpuUsage.set(payload.cpuUsage)
                 this.cpuTemperature.set(payload.cpuTemperature)
                 this.ramUsage.set(payload.ramUsage)
             })
-            this.socketService.listen<BleUpdatePayload>('ble_update').subscribe(payload => {
+        this.socketService
+            .listen<BleUpdatePayload>('ble_update')
+            .pipe(takeUntilDestroyed())
+            .subscribe(payload => {
                 this.humidity.set(payload.humidity)
                 this.temperature.set(payload.temperature)
                 this.voltage.set(payload.voltage)
                 this.lastUpdated.set(payload.lastUpdated)
             })
-        })
     }
 
     toggleVisible(): void {

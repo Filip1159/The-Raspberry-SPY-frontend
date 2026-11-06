@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core'
 import { FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms'
 import { Router } from '@angular/router'
 import { AuthService } from '../../service/auth.service'
+import { BACKEND_OFFLINE_MESSAGE, BackendStatusService, isBackendUnreachable } from '../../service/backend-status.service'
 
 @Component({
     selector: 'app-login',
@@ -12,6 +13,8 @@ import { AuthService } from '../../service/auth.service'
 export class Login {
     private auth = inject(AuthService)
     private router = inject(Router)
+    backendStatus = inject(BackendStatusService)
+    offlineMessage = BACKEND_OFFLINE_MESSAGE
 
     form = new FormGroup({
         username: new FormControl('', { validators: Validators.required, nonNullable: true }),
@@ -31,7 +34,7 @@ export class Login {
                 console.log('token saved')
                 this.router.navigate(['/video'])
             },
-            error: () => this.error.set('Wrong credentials'),
+            error: err => this.error.set(isBackendUnreachable(err) ? BACKEND_OFFLINE_MESSAGE : 'Wrong credentials'),
         })
     }
 }

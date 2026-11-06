@@ -2,8 +2,14 @@
     <div class="videostream__container">
         <div class="videostream__container__stream">
             <span class="videostream__container__stream__title">Video stream</span>
-            <video #video class="videostream__container__stream__video" autoplay playsinline controls width="720" height="480"></video>
-            <button class="button" [disabled]="cameraTurnedOn()" (click)="cameraOn()">Camera ON</button>
+            <video #video class="videostream__container__stream__video" autoplay playsinline controls width="720" height="480" (error)="onVideoError()"></video>
+            @if (streamError()) {
+                <p class="videostream__container__stream__error">
+                    {{ backendStatus.isOffline() ? offlineMessage : 'The stream is unavailable. The camera may still be starting up.' }}
+                </p>
+                <button class="button" (click)="cameraOn()">Retry</button>
+            }
+            <button class="button" [disabled]="(cameraTurnedOn() && !streamError()) || backendStatus.isOffline()" (click)="cameraOn()">Camera ON</button>
         </div>
         <div>
             <div class="videostream__container__light">

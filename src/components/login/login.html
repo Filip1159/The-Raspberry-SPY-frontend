@@ -13,10 +13,12 @@
                 <label class="inputWrapper__label" for="password">Password:</label>
                 <input [formControl]="form.controls.password" class="inputWrapper__input" id="password" type="password" />
             </div>
-            <button class="button">Enter</button>
+            <button class="button" [disabled]="backendStatus.isOffline()">Enter</button>
         </form>
         @if (error()) {
         <p style="color: red">{{ error() }}</p>
+        } @else if (backendStatus.isOffline()) {
+        <p class="loginPage__content__offline">{{ offlineMessage }}</p>
         }
     </div>
 </main>
