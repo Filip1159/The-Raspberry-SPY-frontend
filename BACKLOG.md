@@ -11,7 +11,8 @@ Shared backlog for both repos (`The-Raspberry-SPY-frontend` and `The-Raspberry-S
 5. ✅ B3 (backend hardening)
 6. ✅ Design pass (F2)
 7. ✅ E1 (tests and CI)
-8. **Next:** E2/E3 cleanups, then P2 ideas
+8. ✅ E2 frontend cleanups (mostly), Vitest, Playwright + axe
+9. **Now:** E5 backend FastAPI migration (side by side), then E3 cleanups on the new code, then P2 ideas
 
 ---
 
@@ -171,12 +172,24 @@ The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pa
 - [ ] Replace hardcoded `/home/fwisn/Documents/camera-app/...` paths with a single config module (env vars with sensible defaults); fix the relative `./resources/greetings.json` path.
 - [ ] Remove the committed virtualenv (`bin/`, `lib64`, `pyvenv.cfg`) from git and ignore it; align Python version (`pyproject.toml` says py313, the venv is 3.11).
 - [ ] Run Flask as a `systemd` service (auto start on boot, restart on failure, `journalctl` logs) alongside `cloudflared` and MediaMTX; document it in `configs/CONFIGS.MD`; add a deploy script (`git pull` + restart).
-- [ ] `AlarmManager.reload()` joins the waiting thread while holding the lock that the thread itself takes after an alarm rang; a reload at that exact moment can deadlock. Use a timeout or restructure.
+- [x] `AlarmManager.reload()` no longer deadlocks when a reload coincides with an alarm ringing: reloads are serialized by their own lock, the old thread is joined **outside** the lock that guards the schedule, and every scheduler thread has its own stop event (regression test `test_reloading_while_an_alarm_is_ringing_does_not_deadlock`, verified to fail on the old code). Matters most for the FastAPI version, where a stuck reload would hold a worker thread of the pool.
 - [ ] Make the BLE thread robust (a malformed packet raises in `__parse_response` and should not break the loop), and expose "stale" data (>N min old) to the UI.
 - [ ] Replace `os.system('... sudo tee ...')` for the ACT LED with a udev/group-permission approach or `gpiozero`/sysfs write without sudo.
 - [ ] Finish or remove the draft Arduino Uno R4 websocket manager (`websocket_manager.py`); `send()` is currently broken (`connected_device.send` is not awaited).
 - [ ] Remove dead commented-out code in `gpio.py`; `logging` instead of `print`.
 - [x] Greetings and alarms JSON writes (HTTP) are locked and atomic (`app/json_store.py`); `AlarmManager.save_day` (LCD) still writes directly.
+
+### E5. Backend: move from Flask to FastAPI [BE] (in progress)
+
+Decision: rewrite the backend with FastAPI in the same repo, keeping the API contract unchanged so the frontend needs no change.
+
+- [x] Side-by-side implementation in `app/api/` (REST routers, RS256 JWT dependency, rate limits with the `limits` library, Socket.IO through python-socketio's ASGI app, lifespan that starts the hardware), entry point `main_fastapi.py`, shared validation in `app/validation.py` (also used by Flask), 57 new tests (122 total) that mirror the Flask tests, smoke-tested with the real JavaScript socket.io client (handshake auth, controls, stats broadcast).
+- [ ] Run it on the Raspberry for real (`pip install -r requirements-raspberry.txt -r requirements-fastapi.txt`, `python main_fastapi.py`): nothing hardware-related could be exercised off the Pi (uvicorn + LCD thread + GPIO + BLE thread together, `asyncio.to_thread` for servos).
+- [ ] Compare against Flask on the Pi (same port switch via nginx), then cut over and delete the Flask code (`app/server.py`, `app/controller/`, `app/rate_limit.py`, `main.py`, Flask requirements, the Flask tests), rename `main_fastapi.py` to `main.py`.
+- [ ] Contract test (see E4): run the same request script against Flask, FastAPI and `mock-server`.
+- [ ] Move the import-time singletons (`alarm_manager`, `melody_player`, `servos_controller`) into the FastAPI lifespan / dependency injection, so the E3 deadlock fix and test isolation get easier.
+- [ ] Use FastAPI's strengths after the cutover: typed Pydantic models + OpenAPI as the contract (generate the Angular API client or `openapi.yaml` for the mock), `/docs` behind login, async-friendly stats history (E3/P2). Note: Pydantic validation would change error bodies from 400 `{'error'}` to 422; decide together with the frontend.
+- [ ] systemd unit for uvicorn (E3) and `API_DOCS=0` in production (default on the Pi).
 
 ### E4. Run both apps without a Raspberry [BE][FE] ✅ implemented (optional parts pending)
 

@@ -6,7 +6,7 @@ export async function resetMock() {
     await fetch(`${MOCK}/__mock/config`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ offline: false, latencyMs: 0, failWith: null }),
+        body: JSON.stringify({ offline: false, latencyMs: 0, failWith: null, reset: true }),
     })
 }
 

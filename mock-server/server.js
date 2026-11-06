@@ -9,6 +9,7 @@
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"latencyMs": 2000}'
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"failWith": 500}'   (429 shows the rate-limit messages)
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"offline": false, "latencyMs": 0, "failWith": null}'
+ *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"reset": true}'   (restores the alarms and greetings)
  */
 const crypto = require('crypto')
 const http = require('http')
@@ -28,11 +29,13 @@ const MELODIES = ['Are you sleeping', 'Nokia', 'Old MacDonald', 'Panic', 'Pink p
 
 const secret = crypto.randomBytes(32)
 
+const initialAlarms = () => DAYS.map(day => ({ day, hour: 7, minute: 0, melody: 'Nokia', enabled: day !== 'saturday' && day !== 'sunday' }))
+
 const state = {
     offline: false,
     latencyMs: 0,
     failWith: null,
-    alarms: DAYS.map(day => ({ day, hour: 7, minute: 0, melody: 'Nokia', enabled: day !== 'saturday' && day !== 'sunday' })),
+    alarms: initialAlarms(),
     greetings: [],
 }
 
@@ -78,7 +81,12 @@ app.use((req, _res, next) => {
 
 app.get('/__mock/config', (_req, res) => res.json(configView()))
 app.post('/__mock/config', (req, res) => {
-    const { offline, latencyMs, failWith } = req.body ?? {}
+    const { offline, latencyMs, failWith, reset } = req.body ?? {}
+    // `reset: true` restores the alarms and greetings (data), not the failure simulation
+    if (reset === true) {
+        state.alarms = initialAlarms()
+        state.greetings = []
+    }
     if (typeof offline === 'boolean') {
         state.offline = offline
         // Drop the connections abruptly, like a Raspberry that lost power (clients see a 'transport close')
