@@ -8,7 +8,7 @@ Shared backlog for both repos (`The-Raspberry-SPY-frontend` and `The-Raspberry-S
 2. ✅ E4 (run both apps without a Raspberry) – unblocks local development and testing of everything below
 3. ✅ Portfolio restructure (F1) – everything else (UI, SEO) builds on the new page structure
 4. ✅ SEO (F3)
-5. **Next:** B3 (backend hardening: password hashing, rate limiting, protect `GET /greetings`, melody validation) – still open, and it matters now that the site is public – then the design pass (F2)
+5. ✅ B3 (backend hardening) – then **next:** the design pass (F2)
 6. Remaining P1/P2 items
 
 ---
@@ -37,13 +37,18 @@ The site is public, but Socket.IO used to have no auth: anyone could connect and
 - [ ] FE: the control pad and brightness slider still look active while offline (their socket events are dropped silently) – disable them in F2.
 - [ ] FE: replace the remaining `alert()` calls with toasts (F2).
 
-### B3. Basic backend hardening [BE]
+### B3. Basic backend hardening [BE][FE] ✅ implemented (token refresh pending)
 
-- [ ] Hash passwords in `resources/users.json` (bcrypt/argon2) and compare with a constant-time check.
-- [ ] Rate-limit `POST /login` and `POST /greetings` (Flask-Limiter; Cloudflare WAF rate-limit rule as a second layer). Add max length to greeting text.
-- [ ] `GET /greetings` is public and returns every greeting ever sent – protect it with `@jwt_required` or remove it.
-- [ ] Validate `melody` in `POST /alarms/play` (currently raises on unknown names).
-- [ ] Consider a refresh-token flow or silent re-login instead of the 30 min hard logout + `alert()` warning.
+- [x] Passwords in `users.json` are salted scrypt hashes (werkzeug) compared in constant time; unknown usernames burn a dummy hash check so timing does not reveal valid names. An old plain-text file is migrated automatically on startup; `scripts/manage_users.py` lists/adds/changes users (minimum 10 characters).
+- [x] Rate limiting with Flask-Limiter (in memory, keyed by `CF-Connecting-IP`): failed `POST /login` attempts 5/min and 20/h, `POST /greetings` 3/min and 20/h; the 429 answer is JSON and carries the CORS header, so the UI can tell "too many attempts" from "the Raspberry is off". Verified over real HTTP, including that other visitors and successful logins are not affected.
+- [x] Greetings: text limited to 500 characters (also `maxlength` in the form), whitespace-only and non-JSON bodies rejected, only the latest 1000 are kept, writes are locked and atomic. `GET /greetings` now requires a JWT.
+- [x] `POST /alarms/play` validates the melody (400 instead of an exception); request bodies are capped at 64 KiB; JSON endpoints no longer crash on non-JSON bodies.
+- [x] Bug found on the way: saving alarms through `POST /alarms` never reloaded the scheduler, so the new times only applied after a Flask restart. It now reloads.
+- [x] Frontend: login shows distinct messages for wrong credentials, too many attempts, offline and other errors; the greeting form shows a "too fast" message on 429; the mock server mirrors the new contract (`GET /greetings` needs a token, 500-character limit; `failWith: 429` simulates the limit).
+- [ ] **Manual:** add the Cloudflare rate-limiting rule described in `configs/CONFIGS.MD` as a second layer.
+- [ ] Refresh-token flow or silent re-login instead of the hard 30 minute logout and `alert()` warning (design needed: refresh tokens in an httpOnly cookie vs. a longer-lived access token; also affects the stream URL token).
+- [ ] The JWT lives in `localStorage` and in the HLS URL query string (E2); consider short-lived stream-only tokens.
+- [ ] Rate limits survive restarts only with a persistent store (Redis/file); not needed for a single Pi unless the process restarts often.
 
 ---
 
@@ -151,7 +156,7 @@ The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pa
 - [ ] Replace `os.system('... sudo tee ...')` for the ACT LED with a udev/group-permission approach or `gpiozero`/sysfs write without sudo.
 - [ ] Finish or remove the draft Arduino Uno R4 websocket manager (`websocket_manager.py`); `send()` is currently broken (`connected_device.send` is not awaited).
 - [ ] Remove dead commented-out code in `gpio.py`; `logging` instead of `print`.
-- [ ] Move greetings/alarms JSON writes behind a lock / atomic write (concurrent requests can corrupt the file).
+- [x] Greetings and alarms JSON writes (HTTP) are locked and atomic (`app/json_store.py`); `AlarmManager.save_day` (LCD) still writes directly.
 
 ### E4. Run both apps without a Raspberry [BE][FE] ✅ implemented (optional parts pending)
 

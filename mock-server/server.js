@@ -7,7 +7,7 @@
  * Failure simulation (for testing the offline/error states of the UI), e.g.
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"offline": true}'
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"latencyMs": 2000}'
- *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"failWith": 500}'
+ *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"failWith": 500}'   (429 shows the rate-limit messages)
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"offline": false, "latencyMs": 0, "failWith": null}'
  */
 const crypto = require('crypto')
@@ -20,6 +20,7 @@ const PORT = Number(process.env.MOCK_PORT || 8080)
 const USERNAME = process.env.MOCK_USER || 'demo'
 const PASSWORD = process.env.MOCK_PASSWORD || 'demo'
 const TOKEN_LIFETIME_SECONDS = Number(process.env.MOCK_TOKEN_SECONDS || 30 * 60)
+const MAX_GREETING_LENGTH = 500
 const STATS_INTERVAL_MS = Number(process.env.MOCK_STATS_INTERVAL_MS || 5000)
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -142,12 +143,14 @@ app.post('/alarms/play', requireToken, (req, res) => {
     res.status(204).end()
 })
 
-app.get('/greetings', (_req, res) => res.json(state.greetings))
+// Like the real backend: greetings can only be read by the owner
+app.get('/greetings', requireToken, (_req, res) => res.json(state.greetings))
 
 app.post('/greetings', (req, res) => {
     const text = req.body?.text
-    if (typeof text !== 'string' || text.length === 0) return res.status(400).json({ error: 'Invalid greeting text' })
-    state.greetings.push({ text, timestamp: new Date().toISOString() })
+    if (typeof text !== 'string' || text.trim().length === 0) return res.status(400).json({ error: 'Invalid greeting text' })
+    if (text.length > MAX_GREETING_LENGTH) return res.status(400).json({ error: `Greeting is too long (max ${MAX_GREETING_LENGTH} characters)` })
+    state.greetings.push({ text: text.trim(), timestamp: new Date().toISOString() })
     res.status(201).end()
 })
 

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http'
 import { Component, inject, signal } from '@angular/core'
 import { FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms'
 import { Router } from '@angular/router'
@@ -36,7 +37,14 @@ export class Login {
                 console.log('token saved')
                 this.router.navigate(['/app/video'])
             },
-            error: err => this.error.set(isBackendUnreachable(err) ? BACKEND_OFFLINE_MESSAGE : 'Wrong credentials'),
+            error: err => this.error.set(this.errorMessage(err)),
         })
+    }
+
+    private errorMessage(error: unknown): string {
+        if (isBackendUnreachable(error)) return BACKEND_OFFLINE_MESSAGE
+        if (error instanceof HttpErrorResponse && error.status === 401) return 'Wrong credentials'
+        if (error instanceof HttpErrorResponse && error.status === 429) return 'Too many failed attempts. Please wait a minute and try again.'
+        return 'Something went wrong. Please try again.'
     }
 }

@@ -4,12 +4,16 @@
         <textarea
             placeholder="Let me know what you think. Or maybe who you are..."
             class="greetings__form__textarea"
+            [attr.maxlength]="maxLength"
             [formControl]="form.controls.text"></textarea>
         @if (backendStatus.isOffline()) {
             <p class="greetings__form__offline">{{ offlineMessage }}</p>
         }
     </div>
-    <button class="button greetings__button" [disabled]="form.controls.text.value.trim() === '' || backendStatus.isOffline()" (click)="send()">
+    <button
+        class="button greetings__button"
+        [disabled]="form.controls.text.value.trim() === '' || form.invalid || backendStatus.isOffline()"
+        (click)="send()">
         Send
         <fa-icon class="greetings__sendIcon" [icon]="faPaperPlane" size="sm" />
     </button>

@@ -66,7 +66,7 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 ## Backend contract (what the UI depends on)
 
 - `POST /login` `{username,password}` -> `{access_token, expires_at}`; RS256 JWT, 30 min lifetime, no refresh.
-- `GET/POST /alarms`, `POST /alarms/play`: `Authorization: Bearer <jwt>`. `POST /greetings` is public.
+- `GET/POST /alarms`, `POST /alarms/play`, `GET /greetings`: `Authorization: Bearer <jwt>`. `POST /greetings` is public (max 500 characters, 3/min and 20/h per visitor). `POST /login` allows 5 failed attempts per minute per visitor; both answer `429` when exceeded, which the UI must show as "too many attempts", not as "offline".
 - `GET /health` (public) is the liveness probe used by `BackendStatusService`.
 - All REST goes through `env.backendApiUrl` = `<host>/flask` (nginx strips `/flask`).
 - Socket.IO on `env.websocketUrl` (`/socket.io`) requires a valid JWT in the handshake (`auth: { token }`); otherwise the server refuses with `unauthorized`. `SocketService` connects only while a token exists and logs out on `unauthorized`. Server pushes every 5 s: `system_stats_update` `{cpuUsage,cpuTemperature,ramUsage}` and `ble_update` `{humidity,temperature,voltage,lastUpdated}`. Client sends event `message` with a direction name (`UP`, `DOWN_LEFT`, `CENTER`, …) or `LED<0-255>`.
