@@ -5,12 +5,13 @@ import { faChess } from '@fortawesome/free-solid-svg-icons'
 import { faDuolingo, faGithub, faLinkedinIn } from '@fortawesome/free-brands-svg-icons'
 import { AuthService } from '../../service/auth.service'
 import { PROJECTS, SKILL_GROUPS, SOCIAL_LINKS } from './portfolio.data'
+import { ThemeToggle } from '../theme-toggle/theme-toggle'
 import { RaspberrySpySection } from './raspberry-spy-section/raspberry-spy-section'
 
 @Component({
     selector: 'portfolio',
     standalone: true,
-    imports: [FontAwesomeModule, RouterLink, RaspberrySpySection],
+    imports: [FontAwesomeModule, RouterLink, RaspberrySpySection, ThemeToggle],
     templateUrl: './portfolio.html',
     styleUrl: './portfolio.scss',
 })

@@ -1,4 +1,4 @@
-import { effect, inject, Injectable } from '@angular/core'
+import { effect, inject, Injectable, signal } from '@angular/core'
 import { io, Socket } from 'socket.io-client'
 import { Observable } from 'rxjs'
 import { env } from './../environment'
@@ -21,10 +21,17 @@ export class SocketService {
         auth: callback => callback({ token: this.auth.token() }),
     })
 
+    /** True while the websocket to the Raspberry is open */
+    readonly connected = signal(false)
+
     constructor() {
-        this.socket.on('connect', () => this.backendStatus.markOnline())
+        this.socket.on('connect', () => {
+            this.connected.set(true)
+            this.backendStatus.markOnline()
+        })
 
         this.socket.on('connect_error', error => {
+            this.connected.set(false)
             if (error.message === 'unauthorized') {
                 this.auth.logout()
             } else {
@@ -34,6 +41,7 @@ export class SocketService {
 
         // A deliberate disconnect (logout, server-side session expiry) says nothing about the backend being down
         this.socket.on('disconnect', reason => {
+            this.connected.set(false)
             if (reason === 'transport close' || reason === 'transport error' || reason === 'ping timeout') {
                 this.backendStatus.checkIfOnline()
             }

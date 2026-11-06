@@ -2,6 +2,7 @@ import { Routes } from '@angular/router'
 import { Login } from './components/login/login'
 import { Portfolio } from './components/portfolio/portfolio'
 import { authGuard } from './service/auth.guard'
+import { unsavedChangesGuard } from './service/unsaved-changes.guard'
 
 export const routes: Routes = [
     { path: '', component: Portfolio, title: 'Filip Wiśniewski – Software Engineer' },
@@ -21,12 +22,13 @@ export const routes: Routes = [
             {
                 path: 'alarm',
                 title: 'Alarms – The Raspberry SPY',
+                canDeactivate: [unsavedChangesGuard],
                 loadComponent: () => import('./components/alarm-manager/alarm-manager.component').then(m => m.AlarmManagerComponent),
             },
             {
                 path: 'stats',
                 title: 'Stats – The Raspberry SPY',
-                loadComponent: () => import('./components/stats/mobile/mobile-stats').then(m => m.MobileStats),
+                loadComponent: () => import('./components/stats/stats-page').then(m => m.StatsPage),
             },
         ],
     },

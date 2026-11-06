@@ -1,1 +1,5 @@
-<input class="slider" type="range" [min]="0" [max]="255" [step]="1" [value]="0" (input)="onInput($event)" />
+<div class="slider">
+    <label class="slider__label" [for]="id">{{ label }}</label>
+    <input class="slider__input" [id]="id" type="range" min="0" max="255" step="1" [value]="value" [disabled]="disabled" (input)="onInput($event)" />
+    <output class="slider__value" [for]="id">{{ percent }}%</output>
+</div>

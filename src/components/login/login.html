@@ -1,26 +1,59 @@
 <backend-status-banner />
-<main class="loginPage">
-    <div class="loginPage__top">
-        <img class="loginPage__top__logo" src="raspberry-pi.svg" alt="logo" />
-        <span class="loginPage__top__title">Sign in to access ADMIN features</span>
-    </div>
-    <div class="loginPage__content">
-        <form class="loginPage__content__form" [formGroup]="form" (submit)="onSubmit()">
-            <div class="inputWrapper">
-                <label class="inputWrapper__label" for="username">Username:</label>
-                <input [formControl]="form.controls.username" class="inputWrapper__input" id="username" type="text" />
+<main id="main" class="login" tabindex="-1">
+    <div class="login__theme"><theme-toggle /></div>
+    <div class="login__card card">
+        <img class="login__logo" src="raspberry-pi.svg" alt="" width="72" height="72" />
+        <h1 class="login__title">Sign in</h1>
+        <p class="login__lead">to the control panel of The Raspberry SPY</p>
+
+        <form class="login__form" [formGroup]="form" (ngSubmit)="onSubmit()">
+            <div class="field">
+                <label class="field__label" for="username">Username</label>
+                <input
+                    id="username"
+                    class="field__input"
+                    type="text"
+                    autocomplete="username"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    [formControl]="form.controls.username"
+                    [attr.aria-describedby]="error() ? 'login-error' : null" />
             </div>
-            <div class="inputWrapper">
-                <label class="inputWrapper__label" for="password">Password:</label>
-                <input [formControl]="form.controls.password" class="inputWrapper__input" id="password" type="password" />
+            <div class="field">
+                <label class="field__label" for="password">Password</label>
+                <div class="login__password">
+                    <input
+                        id="password"
+                        class="field__input"
+                        [type]="showPassword() ? 'text' : 'password'"
+                        autocomplete="current-password"
+                        [formControl]="form.controls.password"
+                        [attr.aria-describedby]="error() ? 'login-error' : null" />
+                    <button
+                        class="login__reveal"
+                        type="button"
+                        [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                        [attr.aria-pressed]="showPassword()"
+                        (click)="showPassword.set(!showPassword())">
+                        <fa-icon [icon]="showPassword() ? faEyeSlash : faEye" />
+                    </button>
+                </div>
             </div>
-            <button class="button" [disabled]="backendStatus.isOffline()">Enter</button>
+
+            <div id="login-error" role="alert">
+                @if (error()) {
+                <p class="notice notice--error">{{ error() }}</p>
+                }
+            </div>
+            @if (!error() && backendStatus.isOffline()) {
+            <p class="notice" role="status">{{ offlineMessage }}</p>
+            }
+
+            <button class="button" type="submit" [disabled]="submitting() || backendStatus.isOffline()">
+                {{ submitting() ? 'Signing in...' : 'Sign in' }}
+            </button>
         </form>
-        @if (error()) {
-        <p style="color: red">{{ error() }}</p>
-        } @else if (backendStatus.isOffline()) {
-        <p class="loginPage__content__offline">{{ offlineMessage }}</p>
-        }
-        <a class="loginPage__content__back" routerLink="/">&larr; Back to the portfolio</a>
+
+        <a class="login__back" routerLink="/">&larr; Back to the portfolio</a>
     </div>
 </main>

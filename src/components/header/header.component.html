@@ -1,19 +1,20 @@
 <header class="header">
     <div class="header__banner">
-        <a routerLink="/"><img class="header__banner__img" src="raspberry-pi.svg" alt="Back to the portfolio" /></a>
-        <h1 class="header__banner__name">Raspberry UI</h1>
+        <a class="header__logo" routerLink="/" aria-label="Back to the portfolio">
+            <img class="header__banner__img" src="raspberry-pi.svg" alt="" width="50" height="50" />
+        </a>
+        <p class="header__banner__name">Raspberry UI</p>
     </div>
-    <nav class="header__tabs">
-        <a routerLink="/app/video" class="header__tabs__tab">Live stream</a>
-        <a routerLink="/app/alarm" class="header__tabs__tab">Alarm</a>
+    <nav class="header__tabs" aria-label="Main">
+        <a routerLink="/app/video" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page" class="header__tabs__tab">Live stream</a>
+        <a routerLink="/app/alarm" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page" class="header__tabs__tab">Alarm</a>
+        <a routerLink="/app/stats" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page" class="header__tabs__tab">Stats</a>
         <a routerLink="/" class="header__tabs__tab">Portfolio</a>
     </nav>
     <div class="header__icons">
-        @if (auth.isLoggedIn()) {
-            <stats></stats>
-            <div class="header__logout" (click)="logout()">
-                <fa-icon [icon]="faArrowRightFromBracket" size="3x" color="white" />
-            </div>
-        }
+        <theme-toggle />
+        <button class="header__logout" type="button" aria-label="Sign out" (click)="logout()">
+            <fa-icon [icon]="faArrowRightFromBracket" size="2x" />
+        </button>
     </div>
 </header>

@@ -1,62 +1,122 @@
-<main class="videostream">
-    <div class="videostream__container">
-        <div class="videostream__container__stream">
-            <span class="videostream__container__stream__title">Video stream</span>
+<main id="main" class="stream" tabindex="-1">
+    <h1 class="sr-only">Live stream</h1>
+
+    <section class="card stream__viewer" aria-label="Camera">
+        <div class="stream__frame">
             <video
                 #video
-                class="videostream__container__stream__video"
+                class="stream__video"
+                [class.stream__video--hidden]="state() === 'off'"
                 autoplay
                 playsinline
                 controls
-                width="720"
-                height="480"
+                aria-label="Live camera stream"
                 (error)="onVideoError()"></video>
-            @if (streamError()) {
-                <p class="videostream__container__stream__error">
-                    {{ backendStatus.isOffline() ? offlineMessage : 'The stream is unavailable. The camera may still be starting up.' }}
-                </p>
-                <button class="button" (click)="cameraOn()">Retry</button>
+
+            @switch (state()) {
+                @case ('off') {
+                    <div class="stream__overlay">
+                        <fa-icon [icon]="faVideoSlash" size="3x" />
+                        <p>The camera is off</p>
+                        <button class="button" type="button" [disabled]="backendStatus.isOffline()" (click)="cameraOn()">
+                            <fa-icon [icon]="faVideo" /> Turn the camera on
+                        </button>
+                    </div>
+                }
+                @case ('connecting') {
+                    <div class="stream__overlay">
+                        <div class="spinner"></div>
+                        <p>Connecting to the camera...</p>
+                    </div>
+                }
+                @case ('error') {
+                    <div class="stream__overlay">
+                        <p class="stream__error">
+                            {{ backendStatus.isOffline() ? offlineMessage : 'The stream is unavailable. The camera may still be starting up.' }}
+                        </p>
+                        <button class="button" type="button" (click)="cameraOn()">Try again</button>
+                    </div>
+                }
+                @case ('live') {
+                    <span class="stream__live"><span class="stream__live__dot"></span> LIVE</span>
+                }
             }
-            <button class="button" [disabled]="(cameraTurnedOn() && !streamError()) || backendStatus.isOffline()" (click)="cameraOn()">
-                Camera ON
-            </button>
         </div>
-        <div>
-            <div class="videostream__container__light">
-                <div class="videostream__container__light__icon">
-                    <fa-icon [icon]="faLightbulb" size="xl" />
-                </div>
-                <slider (valueChange)="setBrightness($event)"></slider>
-            </div>
-            <div class="videostream__container__steering">
-                <longpress-button (press)="move('UP_LEFT')">
-                    <fa-icon [icon]="faAngleUp" rotate="-45deg" size="3x" />
-                </longpress-button>
-                <longpress-button (press)="move('UP')">
-                    <fa-icon [icon]="faAngleUp" size="3x" />
-                </longpress-button>
-                <longpress-button (press)="move('UP_RIGHT')">
-                    <fa-icon [icon]="faAngleUp" rotate="45deg" size="3x" />
-                </longpress-button>
-                <longpress-button (press)="move('LEFT')">
-                    <fa-icon [icon]="faAngleUp" rotate="-90deg" size="3x" />
-                </longpress-button>
-                <button class="button" (click)="move('CENTER')">
-                    <fa-icon [icon]="faArrowsToCircle" size="2x" />
+
+        <div class="stream__toolbar">
+            @if (state() === 'off') {
+                <p class="stream__hint">Only signed-in users can see the stream.</p>
+            } @else {
+                <button class="button button--secondary" type="button" (click)="cameraOff()">
+                    <fa-icon [icon]="faVideoSlash" /> Turn the camera off
                 </button>
-                <longpress-button (press)="move('RIGHT')">
-                    <fa-icon [icon]="faAngleUp" rotate="90deg" size="3x" />
-                </longpress-button>
-                <longpress-button (press)="move('DOWN_LEFT')">
-                    <fa-icon [icon]="faAngleUp" rotate="225deg" size="3x" />
-                </longpress-button>
-                <longpress-button (press)="move('DOWN')">
-                    <fa-icon [icon]="faAngleUp" rotate="180deg" size="3x" />
-                </longpress-button>
-                <longpress-button (press)="move('DOWN_RIGHT')">
-                    <fa-icon [icon]="faAngleUp" rotate="135deg" size="3x" />
-                </longpress-button>
-            </div>
+            }
         </div>
-    </div>
+        <p class="sr-only" role="status">
+            @switch (state()) {
+                @case ('live') {
+                    The camera stream is live
+                }
+                @case ('connecting') {
+                    Connecting to the camera
+                }
+                @case ('error') {
+                    The stream is unavailable
+                }
+                @default {
+                    The camera is off
+                }
+            }
+        </p>
+    </section>
+
+    <section class="card stream__controls" aria-labelledby="controls-title">
+        <h2 id="controls-title" class="stream__controls__title">Camera controls</h2>
+
+        @if (!canControl()) {
+            <p class="notice" role="status">
+                {{
+                    backendStatus.isOffline()
+                        ? offlineMessage
+                        : 'Reconnecting to the Raspberry... the controls are paused until the connection is back.'
+                }}
+            </p>
+        }
+
+        <div class="stream__pad" role="group" aria-label="Move the camera">
+            <longpress-button label="Move up and left" [disabled]="!canControl()" (press)="move('UP_LEFT')">
+                <fa-icon [icon]="faAngleUp" rotate="-45deg" size="2x" />
+            </longpress-button>
+            <longpress-button label="Move up" [disabled]="!canControl()" (press)="move('UP')">
+                <fa-icon [icon]="faAngleUp" size="2x" />
+            </longpress-button>
+            <longpress-button label="Move up and right" [disabled]="!canControl()" (press)="move('UP_RIGHT')">
+                <fa-icon [icon]="faAngleUp" rotate="45deg" size="2x" />
+            </longpress-button>
+            <longpress-button label="Move left" [disabled]="!canControl()" (press)="move('LEFT')">
+                <fa-icon [icon]="faAngleUp" rotate="-90deg" size="2x" />
+            </longpress-button>
+            <button class="button stream__center" type="button" aria-label="Center the camera" [disabled]="!canControl()" (click)="move('CENTER')">
+                <fa-icon [icon]="faArrowsToCircle" size="lg" />
+            </button>
+            <longpress-button label="Move right" [disabled]="!canControl()" (press)="move('RIGHT')">
+                <fa-icon [icon]="faAngleUp" rotate="90deg" size="2x" />
+            </longpress-button>
+            <longpress-button label="Move down and left" [disabled]="!canControl()" (press)="move('DOWN_LEFT')">
+                <fa-icon [icon]="faAngleUp" rotate="225deg" size="2x" />
+            </longpress-button>
+            <longpress-button label="Move down" [disabled]="!canControl()" (press)="move('DOWN')">
+                <fa-icon [icon]="faAngleUp" rotate="180deg" size="2x" />
+            </longpress-button>
+            <longpress-button label="Move down and right" [disabled]="!canControl()" (press)="move('DOWN_RIGHT')">
+                <fa-icon [icon]="faAngleUp" rotate="135deg" size="2x" />
+            </longpress-button>
+        </div>
+        <p class="stream__hint stream__hint--keys">Keyboard: arrow keys move the camera, <kbd>C</kbd> centers it.</p>
+
+        <div class="stream__light">
+            <fa-icon [icon]="faLightbulb" />
+            <slider label="Light" [value]="brightness" [disabled]="!canControl()" (valueChange)="setBrightness($event)"></slider>
+        </div>
+    </section>
 </main>

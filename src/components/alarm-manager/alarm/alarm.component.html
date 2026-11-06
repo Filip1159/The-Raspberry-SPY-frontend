@@ -1,32 +1,38 @@
-<div class="alarm">
-    <div class="alarm__day">{{ form.value.day }}</div>
-    <div class="alarm__settings">
-        <div class="alarm__inputWrapper">
-            <span class="alarm__inputWrapper__label">Hour</span>
-            <div class="alarm__inputWrapper__input">
-                <span class="alarm__inputWrapper__input__value">{{ form.value.hour | addLeadZero: 2 }}</span>
-                <div class="alarm__inputWrapper__input__buttonsWrapper">
-                    <button class="alarm__inputWrapper__input__buttonsWrapper__button" (click)="incrementHour()">&#11205;</button>
-                    <button class="alarm__inputWrapper__input__buttonsWrapper__button" (click)="decrementHour()">&#11206;</button>
-                </div>
-            </div>
-        </div>
-        <div class="alarm__inputWrapper">
-            <span class="alarm__inputWrapper__label">Minute</span>
-            <div class="alarm__inputWrapper__input">
-                <span class="alarm__inputWrapper__input__value">{{ form.value.minute | addLeadZero: 2 }}</span>
-                <div class="alarm__inputWrapper__input__buttonsWrapper">
-                    <button class="alarm__inputWrapper__input__buttonsWrapper__button" (click)="incrementMinute()">&#11205;</button>
-                    <button class="alarm__inputWrapper__input__buttonsWrapper__button" (click)="decrementMinute()">&#11206;</button>
-                </div>
-            </div>
-        </div>
-        <input type="checkbox" class="alarm__checkbox" [checked]="form.value.enabled" (click)="toggleEnabled()" />
-        <select class="alarm__melodySelect" (change)="setMelody($event)">
+<article class="alarm" [class.alarm--off]="!form.value.enabled" [attr.aria-label]="'Alarm on ' + day">
+    <div class="alarm__top">
+        <h2 class="alarm__day">{{ day }}</h2>
+        <label class="switch">
+            <input
+                class="switch__input"
+                type="checkbox"
+                role="switch"
+                [checked]="form.value.enabled"
+                [attr.aria-label]="'Alarm on ' + day + ' enabled'"
+                (change)="toggleEnabled()" />
+            <span class="switch__track" aria-hidden="true"></span>
+            <span class="switch__text">{{ form.value.enabled ? 'On' : 'Off' }}</span>
+        </label>
+    </div>
+
+    <div class="alarm__row">
+        <label class="alarm__label" [for]="'time-' + day">Time</label>
+        <input class="field__input alarm__time" [id]="'time-' + day" type="time" required [value]="time" (change)="setTime($event)" />
+    </div>
+
+    <div class="alarm__row">
+        <label class="alarm__label" [for]="'melody-' + day">Melody</label>
+        <select class="field__input alarm__melody" [id]="'melody-' + day" (change)="setMelody($event)">
             @for (m of melodies; track m) {
                 <option [value]="m" [selected]="m === form.value.melody">{{ m }}</option>
             }
         </select>
-        <fa-icon class="alarm__melodyPlay" [icon]="faPlay" size="xl" (click)="play(form.value.melody)" />
+        <button
+            class="button button--secondary alarm__play"
+            type="button"
+            [attr.aria-label]="'Play the melody ' + form.value.melody + ' on the Raspberry'"
+            [disabled]="backendStatus.isOffline()"
+            (click)="play()">
+            <fa-icon [icon]="faPlay" />
+        </button>
     </div>
-</div>
+</article>

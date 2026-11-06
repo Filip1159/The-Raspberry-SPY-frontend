@@ -2,52 +2,40 @@
 .greetings {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    padding: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
 
-    &__form {
+    &__title {
+        font-weight: 700;
+        font-size: 18px;
+    }
+
+    &__textarea {
+        resize: vertical;
+        min-height: 84px;
+    }
+
+    &__footer {
         display: flex;
-        flex-direction: column;
-        gap: 10px;
-        background-color: #c51d4a;
-        padding: 20px;
-        border-radius: 14px;
-        color: white;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
 
-        &__header {
-            margin: 0;
-        }
+    &__counter {
+        font-size: 14px;
+        color: var(--muted);
 
-        &__textarea {
-            border: none;
-            outline: none;
-            border-radius: 14px;
-            padding: 10px;
-            font-size: 18px;
-            resize: none;
-        }
-
-        &__offline {
-            margin: 0;
-            color: #fff3cd;
+        &--limit {
+            color: var(--danger);
+            font-weight: 700;
         }
     }
 
-    &__button {
-        display: flex;
-        justify-content: center;
-        align-self: flex-end;
-        gap: 10px;
-        font-size: 20px;
-        width: 140px;
-        background-color: #1f2430;
-
-        &:hover {
-            background-color: #343b4d;
-        }
-
-        &:disabled {
-            background-color: #1f2430;
-            opacity: 0.45;
-        }
+    .notice {
+        margin: 0;
     }
 }

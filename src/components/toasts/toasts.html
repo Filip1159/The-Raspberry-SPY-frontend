@@ -1,0 +1,8 @@
+<div class="toasts" role="region" aria-label="Notifications">
+    @for (toast of toastService.toasts(); track toast.id) {
+    <div class="toast toast--{{ toast.kind }}" [attr.role]="toast.kind === 'error' ? 'alert' : 'status'">
+        <span class="toast__message">{{ toast.message }}</span>
+        <button class="toast__close" type="button" aria-label="Dismiss" (click)="toastService.dismiss(toast.id)">&times;</button>
+    </div>
+    }
+</div>

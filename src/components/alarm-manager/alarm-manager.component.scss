@@ -1,47 +1,78 @@
-.alarmManager {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.alarms {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px 16px 140px;
 
-    &__alarms {
+    &__header {
+        margin-bottom: 20px;
+    }
 
-        @media (max-width: 600px) {
-            max-height: calc(100vh - 220px);
-            overflow-y: scroll;
+    &__title {
+        margin: 0 0 4px;
+        font-size: 28px;
+    }
+
+    &__lead {
+        margin: 0;
+        color: var(--muted);
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+
+        @media (max-width: 800px) {
+            grid-template-columns: 1fr;
         }
     }
 
-    &__buttonWrapper {
-        display: flex;
-        flex-direction: row-reverse;
-        margin-top: 40px;
-        width: 100%;
-        max-width: 840px;
+    &__skeleton {
+        height: 150px;
+        border-radius: var(--radius);
+    }
 
-        @media (max-width: 1000px) {
-            max-width: 640px;
+    &__error {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-weight: 700;
+    }
+
+    // Stays visible above the mobile navigation while there are unsaved changes
+    &__savebar {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: min(640px, calc(100vw - 24px));
+        padding: 12px 16px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+        transform: translateX(-50%);
+
+        &__text {
+            flex: 1;
+            font-weight: 700;
         }
 
         @media (max-width: 600px) {
-            max-width: 100%;
-            padding: 0;
-        }
+            bottom: 84px;
+            flex-wrap: wrap;
 
-        .button {
-            padding: 20px 40px;
-            border-radius: 14px;
-            font-size: 28px;
-            background-color: green;
+            &__text {
+                flex-basis: 100%;
+            }
 
-            @media (max-width: 600px) {
-                padding: 5px 10px;
+            .button {
+                flex: 1;
             }
         }
     }
-}
-
-.alarmManager__error {
-    margin: 0 0 12px;
-    color: #b00020;
-    font-weight: 700;
 }

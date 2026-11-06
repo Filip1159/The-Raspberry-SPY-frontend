@@ -1,20 +1,25 @@
-<div class="greetings" [formGroup]="form">
-    <div class="greetings__form">
-        <h4 class="greetings__form__header">Send me a greeting!</h4>
-        <textarea
-            placeholder="Let me know what you think. Or maybe who you are..."
-            class="greetings__form__textarea"
-            [attr.maxlength]="maxLength"
-            [formControl]="form.controls.text"></textarea>
-        @if (backendStatus.isOffline()) {
-            <p class="greetings__form__offline">{{ offlineMessage }}</p>
-        }
+<form class="greetings" [formGroup]="form" (ngSubmit)="send()">
+    <label class="greetings__title" for="greeting-text">Send me a greeting!</label>
+    <textarea
+        id="greeting-text"
+        class="field__input greetings__textarea"
+        rows="3"
+        placeholder="Let me know what you think. Or maybe who you are..."
+        [attr.maxlength]="maxLength"
+        [formControl]="form.controls.text"></textarea>
+    <div class="greetings__footer">
+        <span class="greetings__counter" [class.greetings__counter--limit]="form.controls.text.value.length >= maxLength">
+            {{ form.controls.text.value.length }}/{{ maxLength }}
+        </span>
+        <button
+            class="button"
+            type="submit"
+            [disabled]="form.controls.text.value.trim() === '' || form.invalid || sending() || backendStatus.isOffline()">
+            {{ sending() ? 'Sending...' : 'Send' }}
+            <fa-icon [icon]="faPaperPlane" size="sm" />
+        </button>
     </div>
-    <button
-        class="button greetings__button"
-        [disabled]="form.controls.text.value.trim() === '' || form.invalid || backendStatus.isOffline()"
-        (click)="send()">
-        Send
-        <fa-icon class="greetings__sendIcon" [icon]="faPaperPlane" size="sm" />
-    </button>
-</div>
+    @if (backendStatus.isOffline()) {
+        <p class="notice" role="status">{{ offlineMessage }}</p>
+    }
+</form>

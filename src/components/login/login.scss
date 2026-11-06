@@ -1,122 +1,85 @@
-.loginPage {
+.login {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
-    height: 100vh;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    background: var(--surface);
 
-    &__top {
+    &__theme {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        color: var(--text);
+    }
+
+    &__card {
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-        margin: 0 20px;
-
-        &__logo {
-            width: 200px;
-
-            @media (max-width: 600px) {
-                width: 75px;
-            }
-        }
-
-        &__title {
-            text-align: center;
-            font-size: 22px;
-        }
-
-        @media (max-width: 600px) {
-            flex-direction: row;
-            gap: 8px;
-        }
-    }
-
-    &__content {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 20px;
-        width: 500px;
-        height: 500px;
-
-        &__form {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 40px;
-            border-radius: 25px;
-            background-color: #c51d4a;
-            padding: 40px;
-
-            @media (max-width: 600px) {
-                padding: 20px;
-            }
-        }
-
-        @media (max-width: 600px) {
-            width: 95%;
-        }
-    }
-}
-
-.inputWrapper {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 14px;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 1px;
-
-    &__label {
-        font-style: italic;
-        color: white;
-    }
-
-    &__input {
+        align-items: stretch;
+        gap: 6px;
         width: 100%;
-        font-size: 16px;
-        font-weight: 400;
-        padding: 3px 0;
-        border-radius: 5px;
-        border: none;
+        max-width: 420px;
+        padding: 32px;
+
+        @media (max-width: 600px) {
+            padding: 24px 20px;
+        }
     }
 
-    @media (max-width: 600px) {
+    &__logo {
+        align-self: center;
+    }
+
+    &__title {
+        margin: 8px 0 0;
+        text-align: center;
+        font-size: 28px;
+    }
+
+    &__lead {
+        margin: 0 0 18px;
+        text-align: center;
+        color: var(--muted);
+    }
+
+    &__form {
+        display: flex;
         flex-direction: column;
-        justify-content: center;
-        font-weight: 400;
-        gap: 8px;
-    }
-}
+        gap: 16px;
 
-.button {
-    background-color: blue;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: white;
-    padding: 8px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-
-    &:hover {
-        background-color: rgb(0, 0, 200);
+        .notice {
+            margin: 0;
+        }
     }
 
-    &:disabled {
-        cursor: not-allowed;
-        background-color: rgb(100, 100, 200);
+    &__password {
+        position: relative;
+
+        .field__input {
+            padding-right: 48px;
+        }
     }
-}
 
-.loginPage__content__offline {
-    color: #664d03;
-}
+    &__reveal {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 46px;
+        color: var(--muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
 
-.loginPage__content__back {
-    align-self: center;
-    color: #c51d4a;
+        &:hover {
+            color: var(--text);
+        }
+    }
+
+    &__back {
+        align-self: center;
+        margin-top: 16px;
+    }
 }

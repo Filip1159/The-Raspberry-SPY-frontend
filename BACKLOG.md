@@ -8,8 +8,9 @@ Shared backlog for both repos (`The-Raspberry-SPY-frontend` and `The-Raspberry-S
 2. ✅ E4 (run both apps without a Raspberry) – unblocks local development and testing of everything below
 3. ✅ Portfolio restructure (F1) – everything else (UI, SEO) builds on the new page structure
 4. ✅ SEO (F3)
-5. ✅ B3 (backend hardening) – then **next:** the design pass (F2)
-6. Remaining P1/P2 items
+5. ✅ B3 (backend hardening)
+6. ✅ Design pass (F2)
+7. **Next:** E1 (make the frontend tests run in CI), E2/E3 cleanups, then P2 ideas
 
 ---
 
@@ -98,18 +99,24 @@ Turn `/` (About me) into a personal **portfolio**, and keep the existing header 
 - Sections: hero (photo, one-liner, CTA buttons), About, Experience/skills, Projects (cards with stack tags + repo/demo links, Raspberry SPY featured), Hobbies (3D printing, chess, languages), Contact.
 - [ ] **Open questions for Filip** (answered provisionally so far): contact channel = LinkedIn + GitHub only (no e-mail); no CV download; employer shown by name only as on the GitHub profile; featured projects = Raspberry SPY plus the six cards; English only.
 
-### F2. Better UI/UX [FE]
+### F2. Better UI/UX [FE] ✅ implemented (polish pending)
 
-- [ ] Design tokens: colors, spacing, typography as CSS custom properties in `styles.scss`; dark mode (`prefers-color-scheme`) and a toggle.
-- [ ] Redesign the shared components (button, inputs, cards, tabs) once, reuse everywhere; keep the current header/tabs look for the authorized area (requirement).
-- [ ] Replace `alert()` (session expiry, greeting sent/failed) with toasts; session-expiry modal with "stay signed in" (needs refresh, see B3).
-- [ ] Login: loading state, inline errors, show/hide password, `autocomplete` attributes, Enter to submit, error text distinguishing wrong credentials vs backend offline.
-- [ ] Live stream page: clear camera on/off state, loading/buffering/error states, fullscreen, d-pad + keyboard arrows, touch-friendly controls, visible connection status, privacy hint when the camera is on.
-- [ ] Alarm manager: clearer weekly grid, save confirmation + dirty state, unsaved-changes guard, melody preview feedback.
-- [ ] Stats: replace the hover/click dropdown with a dashboard page (CPU, temp, RAM, BLE climate with history/sparkline, "last updated N s ago", stale-data warning).
-- [ ] Accessibility: semantic landmarks, focus states, labels, color contrast, `prefers-reduced-motion` (the slide-in animations), keyboard navigation of the tabs. Target Lighthouse a11y >= 95.
-- [ ] Skeleton/loading states; consistent empty and error states (ties in with B2).
-- [ ] Mobile pass on every page (the layout was just made mobile-friendly – keep that working).
+Verified in headless Chrome (light and dark, desktop and 390 px phone), with the axe accessibility engine reporting no violations on any page, and 38 unit tests.
+
+- [x] Design tokens as CSS variables in `styles.scss` (colors, radius, shadow, focus ring) with a **dark mode**: follows the OS, plus a toggle (portfolio nav, login, header) whose choice is stored and applied before the first paint.
+- [x] One set of shared components/classes (`.button` variants, `.card`, `.field`, `.chip`, `.notice`, `.spinner`, `.skeleton`) replaces the per-page blue/orange styles; the red header and tabs keep their look (active tab underline added).
+- [x] `alert()` is gone: `ToastService` + `<toasts>` (greeting sent/failed, alarms saved, melody played, session expires in 15 s / expired).
+- [x] Login: card layout, labels, show/hide password, `autocomplete`, Enter submits, submitting state, errors in a `role=alert` region that separate wrong credentials / too many attempts / offline / other.
+- [x] Live stream: explicit camera states (off / connecting / live / error) with overlays, LIVE chip, camera on/off, fixed press-and-hold buttons (pointer events; the old mouse+touch handlers started two timers on touch devices), arrow keys + `C`, controls and slider disabled with an explanation when the Raspberry is offline or the socket is reconnecting, labelled slider with percentage.
+- [x] Alarms: card per day with an on/off switch, native time input, melody select and play button; loading skeleton, error state with retry (auto-reload when the Pi is back), unsaved-changes bar with Save/Discard, confirmation before navigating away and before closing the tab.
+- [x] Stats: the header dropdown is replaced by the `/app/stats` dashboard for all screen sizes: CPU, temperature (warm/hot hints), memory with meters, climate card, sparklines with 60 samples of history, Live/Reconnecting chip, "updated N s ago", warnings for stale data and a silent BLE sensor.
+- [x] Accessibility: landmarks and `main` ids with skip links, `aria-current` on the active tab, labelled icon buttons, live regions for statuses, visible focus, `prefers-reduced-motion`. Lighthouse accessibility 100 on the portfolio.
+- [x] Mobile pass on every page (compact header with theme toggle and sign out, bottom navigation, save bar above it).
+- [ ] Session expiry modal with "stay signed in": needs the token refresh from B3 (for now a warning toast and an expiry notice).
+- [ ] Stats: persist the history on the Raspberry (`/stats/history`) so the charts survive a page reload; thresholds for the sensor battery once the battery type is known.
+- [ ] Stream: a real "buffering" state for HLS stalls, a snapshot button, fullscreen button of our own (the native controls offer it).
+- [ ] Portfolio polish: project screenshots, subtle section transitions (respecting reduced motion), a light/dark preview image for social cards.
+- [ ] Visual regression: add Playwright screenshots of the main screens in both themes to CI (ties in with E1/E4).
 
 ### F3. SEO [FE] ✅ implemented (manual submission and polish pending)
 

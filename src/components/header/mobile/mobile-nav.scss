@@ -1,25 +1,33 @@
 .nav {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: flex-end;
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    background: #c51d4a;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--header-bg);
     z-index: 10;
 
     &__link {
         display: flex;
+        flex: 1;
         flex-direction: column;
         text-decoration: none;
-        color: lightgray;
+        color: rgba(255, 255, 255, 0.75);
         align-items: center;
-        padding: 10px;
+        padding: 10px 4px;
         gap: 8px;
 
         &--active {
-            border-bottom: 3px solid lightgray;
+            color: white;
+            border-bottom: 3px solid white;
+        }
+
+        &:focus-visible {
+            outline-color: white;
+            outline-offset: -4px;
         }
 
         &__label {

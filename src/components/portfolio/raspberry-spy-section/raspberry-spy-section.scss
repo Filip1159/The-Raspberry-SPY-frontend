@@ -4,9 +4,9 @@
     gap: 24px;
     padding: 28px;
     margin-bottom: 32px;
-    border: 2px solid #c51d4a;
+    border: 2px solid var(--accent);
     border-radius: 16px;
-    background: #fff;
+    background: var(--card);
 
     @media (max-width: 600px) {
         padding: 18px;
@@ -23,7 +23,7 @@
     &__title {
         margin: 0;
         font-size: 28px;
-        color: #c51d4a;
+        color: var(--accent);
     }
 
     &__body {
@@ -62,7 +62,7 @@
         gap: 8px 18px;
 
         a {
-            color: #c51d4a;
+            color: var(--accent);
             font-weight: 700;
         }
     }
@@ -91,46 +91,31 @@
     font-size: 14px;
     font-weight: 700;
     border-radius: 999px;
-    background: #eceff3;
-    color: #4a5260;
+    background: var(--surface-2);
+    color: var(--muted);
 
     &__dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #9aa3b0;
+        background: var(--muted);
     }
 
     &--online {
-        background: #dff5e4;
-        color: #14612a;
+        background: var(--success-bg);
+        color: var(--success-text);
 
         .status__dot {
-            background: #1f9d45;
+            background: var(--success-text);
         }
     }
 
     &--offline {
-        background: #fff3cd;
-        color: #664d03;
+        background: var(--warning-bg);
+        color: var(--warning-text);
 
         .status__dot {
-            background: #e0a800;
+            background: var(--warning-text);
         }
-    }
-}
-
-.button {
-    display: inline-block;
-    padding: 10px 18px;
-    font-size: 18px;
-    font-weight: 700;
-    text-decoration: none;
-    color: white;
-    background-color: #c51d4a;
-    border-radius: 8px;
-
-    &:hover {
-        background-color: #a3173d;
     }
 }

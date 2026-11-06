@@ -1,212 +1,118 @@
 .alarm {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    background: blue;
-    padding: 20px;
-    border-radius: 14px;
-    color: white;
-    font-weight: 700;
-    margin: 10px auto;
-    width: 95%;
-    max-width: 800px;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 6px solid var(--accent);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+
+    &--off {
+        border-left-color: var(--border);
+
+        .alarm__day,
+        .alarm__time {
+            color: var(--muted);
+        }
+    }
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
 
     &__day {
-        font-size: 34px;
-    }
-
-    &__settings {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 20px;
-        padding-right: 20px;
-    }
-
-    &__inputWrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-
-        &__label {
-            font-size: 20px;
-        }
-
-        &__input {
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: center;
-            border-radius: 6px;
-            background-color: blue;
-
-            &__value {
-                font-size: 28px;
-                text-align: center;
-                width: 40px;
-            }
-
-            &__buttonsWrapper {
-                display: flex;
-                flex-direction: column;
-
-                &__button {
-                    background-color: rgba($color: black, $alpha: 0);
-                    border-width: 0;
-                    cursor: pointer;
-                    color: white;
-                    border-top-right-radius: 6px;
-                    border-bottom-right-radius: 6px;
-                    padding: 8px 12px;
-
-                    &:hover {
-                        background-color: rgba($color: black, $alpha: 0.2);
-                    }
-                }
-            }
-        }
-    }
-
-    &__checkbox {
-        appearance: none;
-        background-color: white;
-        color: white;
-        width: 32px;
-        height: 32px;
-        border: 2px solid black;
-        border-radius: 4px;
-        display: grid;
-        place-content: center;
-        cursor: pointer;
-
-        &:hover {
-            background-color: #ccf;
-        }
-
-        &::before {
-            content: '';
-            width: 24px;
-            height: 24px;
-            transform: scale(0);
-            transition: 120ms transform ease-in-out;
-            box-shadow: inset 24px 24px green;
-            transform-origin: bottom left;
-            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
-        }
-
-        &:checked::before {
-            transform: scale(1);
-        }
-    }
-
-    &__melodySelect {
-        background-color: white;
-        height: 32px;
-        width: 180px;
-        border: 2px solid black;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 20px;
-        text-align: center;
-    }
-
-    &__melodyPlay {
-        cursor: pointer;
-
-        &:hover {
-            transform: scale(1.1);
-        }
-
-        @media (max-width: 600px) {
-            color: #c51d4a;
-        }
-    }
-
-    @media (min-width: 1000px) {
-        width: 800px;
-    }
-
-    @media (max-width: 1000px) {
-        width: 640px;
-    }
-
-    @media (max-width: 768px) {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 0;
-        width: 100%;
-        gap: 0;
         margin: 0;
-        border-bottom: 3px blue solid;
-        border-radius: 0;
-        background-color: white;
-        width: 100vw;
+        font-size: 22px;
+        text-transform: capitalize;
+    }
 
-        &__day {
-            width: auto;
-            font-size: 24px;
-            color: blue;
-            margin-left: 8px;
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    &__label {
+        flex: 0 0 64px;
+        font-weight: 700;
+    }
+
+    &__time {
+        width: auto;
+        font-size: 22px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__melody {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__play {
+        flex: 0 0 auto;
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+// Toggle switch built on a real checkbox (keyboard and screen reader friendly)
+.switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+
+    &__input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    &__track {
+        position: relative;
+        width: 46px;
+        height: 26px;
+        background: var(--muted);
+        border-radius: 999px;
+        transition: background-color 0.15s;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.15s;
         }
+    }
 
-        &__settings {
-            flex-direction: row;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 10px;
-            width: 250px;
-            padding-right: 0;
+    &__input:checked + &__track {
+        background: var(--btn-bg);
+
+        &::after {
+            transform: translateX(20px);
         }
+    }
 
-        &__inputWrapper {
-            width: auto;
-            align-items: flex-end;
-            gap: 2px;
+    &__input:focus-visible + &__track {
+        outline: 3px solid var(--focus);
+        outline-offset: 2px;
+    }
 
-            &__label {
-                display: none;
-            }
-        }
-
-        &__input {
-            min-width: 110px;
-            justify-content: center;
-
-            &__value {
-                font-size: 22px;
-                width: 32px;
-            }
-
-            &__buttonsWrapper {
-                flex-direction: row;
-                border-radius: 4px;
-
-                &__button {
-                    flex: 1;
-                    padding: 4px 8px;
-                    border-radius: 2px;
-                    border-right: 1px solid rgba(255, 255, 255, 0.1);
-                }
-            }
-        }
-
-        &__checkbox {
-            width: 28px;
-            height: 28px;
-        }
-
-        &__melodySelect {
-            width: 140px;
-            font-size: 14px;
-            height: 30px;
-        }
-
-        &__melodyPlay {
-            font-size: 1.5rem;
-        }
+    &__text {
+        min-width: 24px;
+        font-weight: 700;
     }
 }

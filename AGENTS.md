@@ -30,9 +30,9 @@ npm test -- --browsers=ChromeHeadlessCI --watch=false
 ```
 /                public portfolio (own nav, no app header, no websocket, works with the backend down)
 /login           public sign-in page (+ offline banner)
-/app/video       signed-in area (authGuard on the parent, lazy-loaded AppShell = banner + header tabs + mobile nav)
-/app/alarm
-/app/stats       mobile "Other" tab (CPU/RAM/BLE stats + logout)
+/app/video       signed-in area (authGuard on the parent, lazy-loaded AppShell = skip link + banner + header tabs + mobile nav)
+/app/alarm       (leaving with unsaved changes asks for confirmation)
+/app/stats       live stats dashboard with sparklines
 /video /alarm /mobile-stats /greetings  -> redirects (old URLs); anything unknown -> /
 ```
 
@@ -41,23 +41,28 @@ npm test -- --browsers=ChromeHeadlessCI --watch=false
 ```
 src/
   main.ts, main.server.ts, app.config.ts, app.config.server.ts, app.routes.ts, app.routes.server.ts   # server routes: '' is pre-rendered, everything else client-side
+  styles.scss             # design tokens (light/dark CSS variables), base styles, shared .button/.card/.field/.chip/.notice/.spinner/.skeleton classes
   environment.ts          # dev: LAN IP of the Pi (http://192.168.1.105:8080/8888)
   environment.prod.ts     # prod: https://api.filipwisniewski.pl  (swapped in by angular.json fileReplacements)
   environment.mock.ts     # mock configuration: http://localhost:8080 (mock-server or the backend in fake mode), `mock: true`
   components/
-    root/                 # just <router-outlet/>
+    root/                 # <router-outlet/> + <toasts/>
     portfolio/            # public landing page: portfolio.ts/html/scss, portfolio.data.ts (ALL copy: skills, projects, links), raspberry-spy-section/ (status badge + gallery + embedded greeting form)
     shell/                # AppShell: layout of the signed-in area
-    header/ (+ mobile/)   # tabs (Live stream, Alarm, Portfolio), logout, stats dropdown; mobile bottom nav
+    header/ (+ mobile/)   # red header with tabs (Live stream, Alarm, Stats, Portfolio), theme toggle, sign out; compact on phones + bottom nav
     backend-status-banner/ # "Raspberry is probably switched off" bar (shell + login)
-    login/  greetings/ (embedded widget, not a page)  alarm-manager/ (+ alarm/)  video-stream/ (+ slider, longpress-button, mock-camera)  stats/ (+ mobile/)
+    toasts/  theme-toggle/  sparkline/   # small shared UI pieces
+    login/  greetings/ (embedded widget, not a page)  alarm-manager/ (+ alarm/)  video-stream/ (+ slider, longpress-button, mock-camera)  stats/ (stats-page)
   service/
-    auth.service.ts       # JWT in localStorage ('jwt'), expiry timers, 15 s warning via alert()
-    auth.guard.ts         # redirects to /login
+    auth.service.ts       # JWT in localStorage ('jwt'), expiry timers (warning toast 15 s before)
+    auth.guard.ts, unsaved-changes.guard.ts
     raspberry.api.ts      # all REST calls; token passed manually per call (no interceptor)
-    socket.service.ts     # single socket.io connection, listen<T>() returns Observable
+    socket.service.ts     # single socket.io connection, listen<T>() returns Observable, `connected` signal
+    stats.service.ts      # live system/climate values + 60-sample history (created by AppShell)
     backend-status.service.ts / .interceptor.ts   # online/offline detection for the Raspberry (see Gotchas)
     seo.service.ts        # adds `noindex` for routes with `data: { noindex: true }` (login, /app)
+    theme.service.ts      # light/dark choice (data-theme on <html>, stored in localStorage 'theme')
+    toast.service.ts      # replaces alert(): success/error/warning/info messages
 mock-server/server.js      # Express + Socket.IO fake of the backend contract (health, login, alarms, greetings, stats, JWT handshake) + failure simulation
 public/                   # CNAME (custom domain – keep!), robots.txt, sitemap.xml, site.webmanifest, favicons/icons, raspberry-pi.svg, img/ (photos as jpg + webp, og-image.jpg for link previews)
 .github/workflows/        # ci.yml (lint+test on push/PR), deploy.yml (build + GitHub Pages on master)
@@ -85,6 +90,7 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 - Prettier: 4 spaces, single quotes, **no semicolons**, `printWidth` 150, `arrowParens: avoid`. Run `npm run lint` before committing.
 - Components are standalone with `templateUrl`/`styleUrl`. Older files use `*.component.ts`, newer ones just `login.ts`/`stats.ts` – follow the folder you are in. Use signals for state, `inject()` instead of constructor DI.
 - BEM-style SCSS class names (`header__tabs__tab`); mobile support via `@media (max-width: 600px)`.
+- **Use the design tokens and shared classes** from `styles.scss` (`var(--accent)`, `var(--card)`, `.button`, `.card`, `.field`, `.notice`...) instead of hardcoded colors, so light and dark mode both work. Never use `alert()`: inject `ToastService`. Every interactive element needs an accessible name (visible label or `aria-label`), a visible focus state (global `:focus-visible`), and must work with the keyboard; verify new pages with axe in both themes.
 - Keep `public/CNAME` and the `404.html` copy step in `deploy.yml` (SPA deep-link fallback on Pages) intact.
 - Commit messages: short imperative summary.
 
@@ -101,3 +107,5 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 - SEO basics live in three places: `src/index.html` (title, description, canonical, Open Graph/Twitter, JSON-LD, icons), `public/` (robots, sitemap, manifest, images) and `SeoService` (noindex). The domain `https://filipwisniewski.pl` is hardcoded in `index.html` and `sitemap.xml`. When adding a public route add it to `sitemap.xml`, `app.routes.server.ts` (`RenderMode.Prerender`) and give it a route `title`.
 - The social preview, icons and webp images were generated with throw-away puppeteer/sharp scripts (not in the repo); keep `og-image.jpg` at 1200x630.
 - Fonts (Roboto 400/700, latin and latin-ext for the Polish letters) are self-hosted through `@fontsource/roboto` entries in `angular.json` `styles`; do not add Google Fonts links back.
+- Dark mode: CSS variables switch through `prefers-color-scheme` unless the visitor picked a theme (`data-theme` on `<html>`, applied by an inline script in `index.html` before the first paint). `ThemeToggle` resolves its icon after hydration because the pre-rendered page cannot know the theme.
+- The stream page needs `SocketService.connected` and `BackendStatusService` to enable the steering controls; keyboard control (arrows, C) is handled in `VideoStreamComponent`.

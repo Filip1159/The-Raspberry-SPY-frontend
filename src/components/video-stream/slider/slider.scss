@@ -1,5 +1,28 @@
-:host,
 .slider {
-    width: 100%;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    &__label {
+        font-weight: 700;
+    }
+
+    &__input {
+        flex: 1;
+        min-width: 0;
+        height: 32px;
+        accent-color: var(--btn-bg);
+        cursor: pointer;
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+    }
+
+    &__value {
+        min-width: 44px;
+        text-align: right;
+        color: var(--muted);
+    }
 }

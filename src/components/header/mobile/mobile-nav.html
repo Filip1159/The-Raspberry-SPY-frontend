@@ -1,14 +1,14 @@
-<nav class="nav">
-    <a routerLink="/app/alarm" class="nav__link" routerLinkActive="nav__link--active">
+<nav class="nav" aria-label="Main">
+    <a routerLink="/app/alarm" class="nav__link" routerLinkActive="nav__link--active" ariaCurrentWhenActive="page">
         <fa-icon class="nav__link__icon" [icon]="faAlarmClock" size="2x" />
         <span class="nav__link__label">Alarms</span>
     </a>
-    <a routerLink="/app/video" class="nav__link" routerLinkActive="nav__link--active">
+    <a routerLink="/app/video" class="nav__link" routerLinkActive="nav__link--active" ariaCurrentWhenActive="page">
         <fa-icon class="nav__link__icon" [icon]="faUserSecret" size="2x" />
         <span class="nav__link__label">SPY</span>
     </a>
-    <a routerLink="/app/stats" class="nav__link" routerLinkActive="nav__link--active">
-        <fa-icon class="nav__link__icon" [icon]="faBarsStaggered" size="2x" />
+    <a routerLink="/app/stats" class="nav__link" routerLinkActive="nav__link--active" ariaCurrentWhenActive="page">
+        <fa-icon class="nav__link__icon" [icon]="faChartLine" size="2x" />
         <span class="nav__link__label">Stats</span>
     </a>
     <a routerLink="/" class="nav__link">

@@ -1,14 +1,35 @@
-<main class="alarmManager content">
+<main id="main" class="alarms" tabindex="-1">
+    <div class="alarms__header">
+        <h1 class="alarms__title">Alarms</h1>
+        <p class="alarms__lead">The Raspberry plays the melody at the chosen time, every week.</p>
+    </div>
+
     @if (loadError(); as message) {
-        <p class="alarmManager__error">{{ message }}</p>
+        <div class="notice notice--error alarms__error" role="alert">
+            <span>{{ message }}</span>
+            <button class="button button--small" type="button" [disabled]="backendStatus.isOffline()" (click)="loadAlarms()">Try again</button>
+        </div>
+    } @else if (loading()) {
+        <div class="alarms__grid" aria-busy="true" aria-label="Loading the alarms">
+            @for (placeholder of placeholders; track placeholder) {
+                <div class="skeleton alarms__skeleton"></div>
+            }
+        </div>
+    } @else {
+        <div class="alarms__grid">
+            @for (alarm of alarmsSignal(); track alarm.value.day) {
+                <app-alarm [form]="alarm"></app-alarm>
+            }
+        </div>
     }
-    <div class="alarmManager__alarms">
-        @for (alarm of alarmsSignal(); track alarm.value.day) {
-            <app-alarm [form]="alarm"></app-alarm>
-        }
-    </div>
-    
-    <div class="alarmManager__buttonWrapper">
-        <button class="button" [disabled]="backendStatus.isOffline() || loadError() !== null" (click)="save()">Save</button>
-    </div>
+
+    @if (dirty()) {
+        <div class="alarms__savebar" role="region" aria-label="Unsaved changes">
+            <span class="alarms__savebar__text">You have unsaved changes</span>
+            <button class="button button--secondary" type="button" [disabled]="saving()" (click)="discard()">Discard</button>
+            <button class="button" type="button" [disabled]="saving() || backendStatus.isOffline()" (click)="save()">
+                {{ saving() ? 'Saving...' : 'Save changes' }}
+            </button>
+        </div>
+    }
 </main>

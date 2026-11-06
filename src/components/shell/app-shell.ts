@@ -1,5 +1,6 @@
-import { Component } from '@angular/core'
+import { Component, inject } from '@angular/core'
 import { RouterOutlet } from '@angular/router'
+import { StatsService } from '../../service/stats.service'
 import { BackendStatusBanner } from '../backend-status-banner/backend-status-banner'
 import { HeaderComponent } from '../header/header.component'
 import { MobileNavComponent } from '../header/mobile/mobile-nav'
@@ -10,10 +11,14 @@ import { MobileNavComponent } from '../header/mobile/mobile-nav'
     standalone: true,
     imports: [RouterOutlet, BackendStatusBanner, HeaderComponent, MobileNavComponent],
     template: `
+        <a class="skip-link" href="#main">Skip to the content</a>
         <backend-status-banner />
         <app-header />
-        <mobile-nav />
         <router-outlet />
+        <mobile-nav />
     `,
 })
-export class AppShell {}
+export class AppShell {
+    // Starts collecting stats as soon as the signed-in area opens, so the charts already have history on the stats tab
+    private stats = inject(StatsService)
+}

@@ -1,0 +1,74 @@
+<main id="main" class="stats" tabindex="-1">
+    <div class="stats__header">
+        <h1 class="stats__title">Raspberry stats</h1>
+        <div class="stats__status">
+            <span class="status" [class.status--live]="connected()" [class.status--lost]="!connected()" role="status">
+                <span class="status__dot"></span>
+                {{ connected() ? 'Live' : 'Reconnecting...' }}
+            </span>
+            <span class="stats__updated">Updated {{ ageText(secondsSinceUpdate()) }}</span>
+        </div>
+    </div>
+
+    @if (isStale()) {
+    <p class="notice" role="status">No new data for {{ secondsSinceUpdate() }} seconds. The Raspberry may be busy or the connection is unstable.</p>
+    }
+
+    <div class="stats__grid">
+        <section class="card metric" aria-labelledby="m-cpu">
+            <h2 id="m-cpu" class="metric__name">CPU usage</h2>
+            <p class="metric__value">{{ stats.cpuUsage() !== null ? stats.cpuUsage() + '%' : '–' }}</p>
+            <div class="meter" role="meter" aria-labelledby="m-cpu" [attr.aria-valuenow]="stats.cpuUsage()" aria-valuemin="0" aria-valuemax="100">
+                <div class="meter__fill" [style.width.%]="stats.cpuUsage() ?? 0"></div>
+            </div>
+            <sparkline [values]="stats.cpuHistory()" label="CPU usage in percent" />
+        </section>
+
+        <section class="card metric" aria-labelledby="m-temp">
+            <h2 id="m-temp" class="metric__name">CPU temperature</h2>
+            <p
+                class="metric__value"
+                [class.metric__value--warm]="temperatureLevel() === 'warm'"
+                [class.metric__value--hot]="temperatureLevel() === 'hot'">
+                {{ stats.cpuTemperature() !== null ? stats.cpuTemperature() + '°C' : '–' }}
+            </p>
+            @if (temperatureLevel() !== 'ok') {
+            <p class="metric__hint">{{ temperatureLevel() === 'hot' ? 'Running hot, check the cooling.' : 'Getting warm.' }}</p>
+            }
+            <sparkline [values]="stats.cpuTemperatureHistory()" label="CPU temperature in degrees Celsius" />
+        </section>
+
+        <section class="card metric" aria-labelledby="m-ram">
+            <h2 id="m-ram" class="metric__name">Memory</h2>
+            <p class="metric__value">{{ stats.ramUsage() !== null ? stats.ramUsage() + '%' : '–' }}</p>
+            <div class="meter" role="meter" aria-labelledby="m-ram" [attr.aria-valuenow]="stats.ramUsage()" aria-valuemin="0" aria-valuemax="100">
+                <div class="meter__fill" [style.width.%]="stats.ramUsage() ?? 0"></div>
+            </div>
+            <sparkline [values]="stats.ramHistory()" label="Memory usage in percent" />
+        </section>
+
+        <section class="card metric metric--wide" aria-labelledby="m-climate">
+            <h2 id="m-climate" class="metric__name">Room climate (BLE sensor)</h2>
+            @if (sensorIsStale()) {
+            <p class="notice">No fresh reading from the sensor for {{ ageText(sensorAgeSeconds()) }}. Is it in range?</p>
+            }
+            <div class="climate">
+                <div>
+                    <p class="metric__label">Temperature</p>
+                    <p class="metric__value">{{ stats.temperature() !== null ? stats.temperature() + '°C' : '–' }}</p>
+                    <sparkline [values]="stats.temperatureHistory()" label="Room temperature in degrees Celsius" />
+                </div>
+                <div>
+                    <p class="metric__label">Humidity</p>
+                    <p class="metric__value">{{ stats.humidity() !== null ? stats.humidity() + '%' : '–' }}</p>
+                    <sparkline [values]="stats.humidityHistory()" label="Room humidity in percent" />
+                </div>
+                <div>
+                    <p class="metric__label">Sensor battery</p>
+                    <p class="metric__value">{{ stats.voltage() !== null ? stats.voltage() + ' V' : '–' }}</p>
+                    <p class="metric__hint">Last reading: {{ stats.climateLastReading() ?? '–' }}</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
