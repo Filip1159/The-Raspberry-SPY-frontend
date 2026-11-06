@@ -1,6 +1,6 @@
 # The Raspberry SPY – frontend
 
-Angular SPA for a home-built Raspberry Pi 5 camera/alarm system. Hosted on **GitHub Pages** at `https://filipwisniewski.pl`. The backend runs on the Raspberry at home and is exposed through a **Cloudflare Tunnel** at `https://api.filipwisniewski.pl`. When the Pi is off, the backend is unreachable – that is a normal state, not a bug.
+Angular SPA: Filip's **portfolio** (public, `/`) plus the control panel of a home-built Raspberry Pi 5 camera/alarm system (signed-in area, `/app/*`). Hosted on **GitHub Pages** at `https://filipwisniewski.pl`. The backend runs on the Raspberry at home and is exposed through a **Cloudflare Tunnel** at `https://api.filipwisniewski.pl`. When the Pi is off, the backend is unreachable – that is a normal state, not a bug.
 
 Backend repo: `../The-Raspberry-SPY-backend` (Python/Flask). Planned work lives in `BACKLOG.md` (covers both repos).
 
@@ -24,6 +24,17 @@ npm run format     # prettier --write .
 npm test -- --browsers=ChromeHeadlessCI --watch=false
 ```
 
+## Routes
+
+```
+/                public portfolio (own nav, no app header, no websocket, works with the backend down)
+/login           public sign-in page (+ offline banner)
+/app/video       signed-in area (authGuard on the parent, lazy-loaded AppShell = banner + header tabs + mobile nav)
+/app/alarm
+/app/stats       mobile "Other" tab (CPU/RAM/BLE stats + logout)
+/video /alarm /mobile-stats /greetings  -> redirects (old URLs); anything unknown -> /
+```
+
 ## Layout
 
 ```
@@ -33,11 +44,12 @@ src/
   environment.prod.ts     # prod: https://api.filipwisniewski.pl  (swapped in by angular.json fileReplacements)
   environment.mock.ts     # mock configuration: http://localhost:8080 (mock-server or the backend in fake mode), `mock: true`
   components/
-    root/                 # <backend-status-banner/> + <app-header/> + <mobile-nav/> + <router-outlet/>
-    backend-status-banner/ # "Raspberry is probably switched off" bar
-    header/ (+ mobile/)   # tabs, logout, stats dropdown
-    about-me/             # landing page "/" (to become portfolio, see BACKLOG)
-    login/  greetings/  alarm-manager/ (+ alarm/)  video-stream/ (+ slider, longpress-button)  stats/ (+ mobile/)
+    root/                 # just <router-outlet/>
+    portfolio/            # public landing page: portfolio.ts/html/scss, portfolio.data.ts (ALL copy: skills, projects, links), raspberry-spy-section/ (status badge + gallery + embedded greeting form)
+    shell/                # AppShell: layout of the signed-in area
+    header/ (+ mobile/)   # tabs (Live stream, Alarm, Portfolio), logout, stats dropdown; mobile bottom nav
+    backend-status-banner/ # "Raspberry is probably switched off" bar (shell + login)
+    login/  greetings/ (embedded widget, not a page)  alarm-manager/ (+ alarm/)  video-stream/ (+ slider, longpress-button, mock-camera)  stats/ (+ mobile/)
   service/
     auth.service.ts       # JWT in localStorage ('jwt'), expiry timers, 15 s warning via alert()
     auth.guard.ts         # redirects to /login
@@ -45,7 +57,7 @@ src/
     socket.service.ts     # single socket.io connection, listen<T>() returns Observable
     backend-status.service.ts / .interceptor.ts   # online/offline detection for the Raspberry (see Gotchas)
 mock-server/server.js      # Express + Socket.IO fake of the backend contract (health, login, alarms, greetings, stats, JWT handshake) + failure simulation
-public/                   # CNAME (custom domain – keep!), favicon, me.jpg, raspberry-pi.svg
+public/                   # CNAME (custom domain – keep!), favicon, raspberry-pi.svg, img/ (web-sized portrait and project photos)
 .github/workflows/        # ci.yml (lint+test on push/PR), deploy.yml (build + GitHub Pages on master)
 ```
 
@@ -80,5 +92,6 @@ public/                   # CNAME (custom domain – keep!), favicon, me.jpg, ra
 - The Pages site is static; there is no server to hide secrets. Nothing secret belongs in this repo.
 - The socket is created with `autoConnect: false` and connects/disconnects reactively with the `AuthService.token` signal. Components must not assume it is connected (`emit` is a no-op while disconnected). The header `Stats` only renders when logged in.
 - Several `alert()` calls are used for UX (session expiry, greetings). Prefer replacing them with in-page toasts when touching that code.
-- `about-me` still links to old repo names (`raspberry-backend`, `raspberry-ui`); the real ones are `The-Raspberry-SPY-backend/-frontend`.
 - The Raspberry being off is a normal state. `BackendStatusService.status()` / `isOffline()` drive the global banner and disabled submit buttons; use `isBackendUnreachable(error)` and `BACKEND_OFFLINE_MESSAGE` in new error handlers instead of showing a generic failure. Do not inject `BackendStatusService` into code that runs while it is being constructed (its interceptor injects it lazily; `app.config.ts` triggers the first `check()` through an app initializer).
+- Portfolio copy lives in `portfolio.data.ts` and `portfolio.html`; keep it factual (taken from the GitHub profile) and don't add claims about Filip that are not public. The portfolio must not require the backend: it only shows the status badge, which re-checks `/health` every 30 s.
+- The `SocketService` (socket.io-client) must stay out of the portfolio bundle: only inject it from components inside the lazy `/app` area.

@@ -1,17 +1,12 @@
 <header class="header">
     <div class="header__banner">
-        <img class="header__banner__img" src="raspberry-pi.svg" alt="logo" />
+        <a routerLink="/"><img class="header__banner__img" src="raspberry-pi.svg" alt="Back to the portfolio" /></a>
         <h1 class="header__banner__name">Raspberry UI</h1>
     </div>
     <nav class="header__tabs">
-        @if (auth.isLoggedIn()) {
-            <a routerLink="/video" class="header__tabs__tab">Live stream</a>
-            <a routerLink="/alarm" class="header__tabs__tab">Alarm</a>
-        } @else {
-            <a routerLink="/login" class="header__tabs__tab">Login</a>
-        }
-        <a routerLink="/greetings" class="header__tabs__tab">Greet me</a>
-        <a routerLink="/" class="header__tabs__tab">About me</a>
+        <a routerLink="/app/video" class="header__tabs__tab">Live stream</a>
+        <a routerLink="/app/alarm" class="header__tabs__tab">Alarm</a>
+        <a routerLink="/" class="header__tabs__tab">Portfolio</a>
     </nav>
     <div class="header__icons">
         @if (auth.isLoggedIn()) {

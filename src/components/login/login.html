@@ -1,3 +1,4 @@
+<backend-status-banner />
 <main class="loginPage">
     <div class="loginPage__top">
         <img class="loginPage__top__logo" src="raspberry-pi.svg" alt="logo" />
@@ -20,5 +21,6 @@
         } @else if (backendStatus.isOffline()) {
         <p class="loginPage__content__offline">{{ offlineMessage }}</p>
         }
+        <a class="loginPage__content__back" routerLink="/">&larr; Back to the portfolio</a>
     </div>
 </main>

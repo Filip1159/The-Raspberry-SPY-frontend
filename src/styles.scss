@@ -34,3 +34,28 @@ body {
         background-color: rgb(100, 100, 200);
     }
 }
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chip {
+    padding: 4px 12px;
+    font-size: 14px;
+    border-radius: 999px;
+    background: #f3e3e8;
+    color: #7d1230;
+}
+
+html {
+    scroll-behavior: smooth;
+
+    @media (prefers-reduced-motion: reduce) {
+        scroll-behavior: auto;
+    }
+}

@@ -1,0 +1,128 @@
+<header class="nav">
+    <a class="nav__brand" href="#top">Filip Wiśniewski</a>
+    <nav class="nav__links" aria-label="Sections">
+        <a href="#about">About</a>
+        <a href="#skills">Skills</a>
+        <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
+    </nav>
+    <a class="nav__panel" [routerLink]="auth.isLoggedIn() ? '/app/video' : '/login'">{{ auth.isLoggedIn() ? 'Control panel' : 'Sign in' }}</a>
+</header>
+
+<main id="top" class="portfolio">
+    <section class="hero">
+        <div class="hero__text">
+            <p class="hero__eyebrow">Software Engineer @ Ocado Technology</p>
+            <h1 class="hero__title">Hi, I'm Filip.</h1>
+            <p class="hero__lead">
+                I build backend systems at work and tinker with electronics, embedded devices and 3D-printed gadgets after hours. This site is both my
+                portfolio and the front door of one of those gadgets.
+            </p>
+            <div class="hero__actions">
+                <a class="button" href="#projects">See my projects</a>
+                <a class="button button--ghost" [href]="links.github" target="_blank" rel="noopener"> <fa-icon [icon]="faGithub" /> GitHub </a>
+                <a class="button button--ghost" [href]="links.linkedin" target="_blank" rel="noopener">
+                    <fa-icon [icon]="faLinkedinIn" /> LinkedIn
+                </a>
+            </div>
+        </div>
+        <img class="hero__photo" src="img/me.jpg" alt="Portrait of Filip Wiśniewski" width="300" height="400" />
+    </section>
+
+    <section id="about" class="section">
+        <h2 class="section__title">About me</h2>
+        <div class="about">
+            <p>
+                I'm a software engineer at <strong>Ocado Technology</strong>, working there since 2022, and a graduate of the
+                <strong>Wrocław University of Science and Technology</strong>. In my free time I work as a private programming tutor.
+            </p>
+            <p>
+                My day job is mostly Java and TypeScript, but my personal projects go much closer to the metal: microcontrollers, sensors, a Raspberry
+                Pi and a 3D printer. Several of them are complete devices, with the electronics, the firmware and a web app that controls them.
+            </p>
+        </div>
+    </section>
+
+    <section id="skills" class="section section--alt">
+        <h2 class="section__title">Skills</h2>
+        <div class="skills">
+            @for (group of skillGroups; track group.title) {
+            <div class="skills__group">
+                <h3 class="skills__title">{{ group.title }}</h3>
+                <ul class="chips">
+                    @for (skill of group.skills; track skill) {
+                    <li class="chip">{{ skill }}</li>
+                    }
+                </ul>
+            </div>
+            }
+        </div>
+    </section>
+
+    <section id="projects" class="section">
+        <h2 class="section__title">Projects</h2>
+        <raspberry-spy-section />
+
+        <div class="projects">
+            @for (project of projects; track project.name) {
+            <article class="project">
+                <h3 class="project__name">{{ project.name }}</h3>
+                <p class="project__description">{{ project.description }}</p>
+                <ul class="chips chips--small">
+                    @for (tag of project.tags; track tag) {
+                    <li class="chip">{{ tag }}</li>
+                    }
+                </ul>
+                <div class="project__links">
+                    @for (link of project.links; track link.url) {
+                    <a [href]="link.url" target="_blank" rel="noopener">{{ link.label }}</a>
+                    }
+                </div>
+            </article>
+            }
+        </div>
+    </section>
+
+    <section id="beyond-code" class="section section--alt">
+        <h2 class="section__title">Beyond code</h2>
+        <ul class="hobbies">
+            <li>3D printing and designing parts in Autodesk Fusion for my own devices</li>
+            <li>
+                Playing chess:
+                <a [href]="links.chess" target="_blank" rel="noopener">my Chess.com profile</a>
+            </li>
+            <li>
+                Learning languages:
+                <a [href]="links.duolingo" target="_blank" rel="noopener">my Duolingo profile</a>
+            </li>
+        </ul>
+    </section>
+
+    <section id="contact" class="section">
+        <h2 class="section__title">Contact</h2>
+        <p class="section__intro">You can find me on LinkedIn, and the code of everything above lives on GitHub.</p>
+        <div class="contact">
+            <a class="contact__link" [href]="links.linkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
+                <fa-icon [icon]="faLinkedinIn" size="2x" />
+                <span>LinkedIn</span>
+            </a>
+            <a class="contact__link" [href]="links.github" target="_blank" rel="noopener" aria-label="GitHub">
+                <fa-icon [icon]="faGithub" size="2x" />
+                <span>GitHub</span>
+            </a>
+            <a class="contact__link" [href]="links.chess" target="_blank" rel="noopener" aria-label="Chess.com">
+                <fa-icon [icon]="faChess" size="2x" />
+                <span>Chess.com</span>
+            </a>
+            <a class="contact__link" [href]="links.duolingo" target="_blank" rel="noopener" aria-label="Duolingo">
+                <fa-icon [icon]="faDuolingo" size="2x" />
+                <span>Duolingo</span>
+            </a>
+        </div>
+    </section>
+</main>
+
+<footer class="footer">
+    <span>© {{ year }} Filip Wiśniewski</span>
+    <a [routerLink]="auth.isLoggedIn() ? '/app/video' : '/login'">{{ auth.isLoggedIn() ? 'Control panel' : 'Sign in to the control panel' }}</a>
+</footer>

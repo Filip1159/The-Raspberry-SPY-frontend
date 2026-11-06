@@ -1,0 +1,55 @@
+<article class="spy">
+    <div class="spy__header">
+        <h3 class="spy__title">The Raspberry SPY</h3>
+        <span
+            class="status"
+            [class.status--online]="backendStatus.status() === 'online'"
+            [class.status--offline]="backendStatus.status() === 'offline'"
+            role="status">
+            <span class="status__dot"></span>
+            @switch (backendStatus.status()) { @case ('online') { The Raspberry is online } @case ('offline') { The Raspberry is probably switched off
+            } @default { Checking the Raspberry... } }
+        </span>
+    </div>
+
+    <div class="spy__body">
+        <div class="spy__text">
+            <p>
+                A home monitoring system and playground built around a Raspberry Pi 5 and a camera on a 3D-printed pan/tilt stand. A Python (Flask)
+                backend runs on the Raspberry at my home and is exposed through a Cloudflare Tunnel, while this Angular frontend is hosted on GitHub
+                Pages. The camera stream is available after signing in.
+            </p>
+            <ul class="spy__features">
+                @for (feature of spy.features; track feature) {
+                <li>{{ feature }}</li>
+                }
+            </ul>
+            <ul class="chips">
+                @for (tag of spy.tags; track tag) {
+                <li class="chip">{{ tag }}</li>
+                }
+            </ul>
+            <div class="spy__links">
+                @for (link of spy.links; track link.url) {
+                <a [href]="link.url" target="_blank" rel="noopener">{{ link.label }}</a>
+                }
+            </div>
+            <a class="button" [routerLink]="auth.isLoggedIn() ? '/app/video' : '/login'">
+                {{ auth.isLoggedIn() ? 'Open the control panel' : 'Sign in to the control panel' }}
+            </a>
+        </div>
+        <div class="spy__gallery">
+            <img
+                src="img/spy-overview.jpg"
+                alt="The Raspberry SPY: Raspberry Pi with a camera on a 3D-printed stand"
+                width="500"
+                height="500"
+                loading="lazy" />
+            <img src="img/spy-camera.jpg" alt="Close-up of the camera and the pan/tilt servos" width="500" height="500" loading="lazy" />
+        </div>
+    </div>
+
+    <div class="spy__greeting">
+        <greetings />
+    </div>
+</article>

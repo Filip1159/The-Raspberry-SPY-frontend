@@ -1,0 +1,325 @@
+$accent: #c51d4a;
+$text: #1f2430;
+$muted: #5b6472;
+$surface: #f6f7f9;
+
+:host {
+    display: block;
+    color: $text;
+}
+
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e5e8ec;
+
+    &__brand {
+        font-size: 20px;
+        font-weight: 700;
+        color: $accent;
+        text-decoration: none;
+    }
+
+    &__links {
+        display: flex;
+        gap: 22px;
+
+        a {
+            color: $text;
+            text-decoration: none;
+
+            &:hover {
+                color: $accent;
+            }
+        }
+
+        @media (max-width: 700px) {
+            display: none;
+        }
+    }
+
+    &__panel {
+        padding: 6px 14px;
+        font-weight: 700;
+        color: white;
+        text-decoration: none;
+        background: $accent;
+        border-radius: 8px;
+
+        &:hover {
+            background: #a3173d;
+        }
+    }
+
+    @media (max-width: 600px) {
+        padding: 10px 16px;
+    }
+}
+
+.portfolio {
+    padding-top: 64px;
+}
+
+.hero {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 56px 24px;
+
+    &__eyebrow {
+        margin: 0 0 8px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: $accent;
+    }
+
+    &__title {
+        margin: 0 0 16px;
+        font-size: 56px;
+        line-height: 1.1;
+    }
+
+    &__lead {
+        margin: 0 0 24px;
+        font-size: 20px;
+        line-height: 1.5;
+        color: $muted;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    &__photo {
+        width: 300px;
+        height: auto;
+        border-radius: 20px;
+        object-fit: cover;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    }
+
+    @media (max-width: 800px) {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding-top: 32px;
+
+        &__actions {
+            justify-content: center;
+        }
+
+        &__photo {
+            grid-row: 1;
+            justify-self: center;
+            width: 200px;
+        }
+
+        &__title {
+            font-size: 40px;
+        }
+
+        &__lead {
+            font-size: 18px;
+        }
+    }
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 17px;
+    font-weight: 700;
+    text-decoration: none;
+    color: white;
+    background: $accent;
+    border: 2px solid $accent;
+    border-radius: 8px;
+
+    &:hover {
+        background: #a3173d;
+        border-color: #a3173d;
+    }
+
+    &--ghost {
+        color: $accent;
+        background: transparent;
+
+        &:hover {
+            color: white;
+        }
+    }
+}
+
+.section {
+    padding: 56px 24px;
+    scroll-margin-top: 64px;
+
+    &--alt {
+        background: $surface;
+    }
+
+    &__title,
+    &__intro {
+        max-width: 1000px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    &__title {
+        margin-top: 0;
+        margin-bottom: 24px;
+        font-size: 32px;
+    }
+
+    &__intro {
+        margin-top: -12px;
+        margin-bottom: 24px;
+        color: $muted;
+    }
+
+    @media (max-width: 600px) {
+        padding: 40px 16px;
+    }
+}
+
+.about,
+.skills,
+.projects,
+.hobbies,
+.contact,
+raspberry-spy-section {
+    display: block;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.about p {
+    margin: 0 0 16px;
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+.skills {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+
+    &__title {
+        margin: 0 0 12px;
+        font-size: 18px;
+    }
+
+    @media (max-width: 800px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.projects {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 20px;
+}
+
+.project {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    background: white;
+    border: 1px solid #e5e8ec;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    &__name {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    &__description {
+        flex: 1;
+        margin: 0;
+        line-height: 1.5;
+        color: $muted;
+    }
+
+    &__links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+
+        a {
+            font-weight: 700;
+            color: $accent;
+        }
+    }
+}
+
+.hobbies {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 0;
+    padding-left: 20px;
+    font-size: 18px;
+    line-height: 1.5;
+
+    a {
+        color: $accent;
+        font-weight: 700;
+    }
+}
+
+.contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    &__link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        min-width: 110px;
+        padding: 16px;
+        color: $text;
+        text-decoration: none;
+        border: 1px solid #e5e8ec;
+        border-radius: 14px;
+
+        &:hover {
+            color: $accent;
+            border-color: $accent;
+        }
+    }
+}
+
+.footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 24px;
+    color: $muted;
+    background: $surface;
+
+    a {
+        color: $accent;
+    }
+}

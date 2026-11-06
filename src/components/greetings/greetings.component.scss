@@ -1,24 +1,20 @@
+// Embedded in the Raspberry SPY section of the portfolio
 .greetings {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 40px;
+    gap: 12px;
 
     &__form {
         display: flex;
         flex-direction: column;
-        background-color: blue;
+        gap: 10px;
+        background-color: #c51d4a;
         padding: 20px;
         border-radius: 14px;
         color: white;
 
         &__header {
-
-            @media (max-width: 600px) {
-                margin: 4px;
-            }
+            margin: 0;
         }
 
         &__textarea {
@@ -30,8 +26,9 @@
             resize: none;
         }
 
-        @media (max-width: 600px) {
-            border-radius: 0;
+        &__offline {
+            margin: 0;
+            color: #fff3cd;
         }
     }
 
@@ -42,22 +39,15 @@
         gap: 10px;
         font-size: 20px;
         width: 140px;
-    }
+        background-color: #1f2430;
 
-    @media (min-width: 1000px) {
-        width: 840px;
-    }
+        &:hover {
+            background-color: #343b4d;
+        }
 
-    @media (max-width: 1000px) {
-        width: 640px;
+        &:disabled {
+            background-color: #1f2430;
+            opacity: 0.45;
+        }
     }
-
-    @media (max-width: 600px) {
-        width: 100%;
-    }
-}
-
-.greetings__form__offline {
-    margin: 8px 0 0;
-    color: #ffe69c;
 }

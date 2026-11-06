@@ -1,17 +1,38 @@
 import { Routes } from '@angular/router'
 import { Login } from './components/login/login'
+import { Portfolio } from './components/portfolio/portfolio'
 import { authGuard } from './service/auth.guard'
-import { AlarmManagerComponent } from './components/alarm-manager/alarm-manager.component'
-import { GreetingsComponent } from './components/greetings/greetings.component'
-import { VideoStreamComponent } from './components/video-stream/video-stream.component'
-import { AboutMe } from './components/about-me/about-me.component'
-import { MobileStats } from './components/stats/mobile/mobile-stats'
 
 export const routes: Routes = [
-    { path: 'login', component: Login },
-    { path: 'video', component: VideoStreamComponent, canActivate: [authGuard] },
-    { path: 'alarm', component: AlarmManagerComponent, canActivate: [authGuard] },
-    { path: 'greetings', component: GreetingsComponent },
-    { path: 'mobile-stats', component: MobileStats, canActivate: [authGuard] },
-    { path: '', component: AboutMe },
+    { path: '', component: Portfolio, title: 'Filip Wiśniewski – Software Engineer' },
+    { path: 'login', component: Login, title: 'Sign in – The Raspberry SPY' },
+    {
+        path: 'app',
+        loadComponent: () => import('./components/shell/app-shell').then(m => m.AppShell),
+        canActivate: [authGuard],
+        children: [
+            { path: '', pathMatch: 'full', redirectTo: 'video' },
+            {
+                path: 'video',
+                title: 'Live stream – The Raspberry SPY',
+                loadComponent: () => import('./components/video-stream/video-stream.component').then(m => m.VideoStreamComponent),
+            },
+            {
+                path: 'alarm',
+                title: 'Alarms – The Raspberry SPY',
+                loadComponent: () => import('./components/alarm-manager/alarm-manager.component').then(m => m.AlarmManagerComponent),
+            },
+            {
+                path: 'stats',
+                title: 'Stats – The Raspberry SPY',
+                loadComponent: () => import('./components/stats/mobile/mobile-stats').then(m => m.MobileStats),
+            },
+        ],
+    },
+    // URLs from before the portfolio existed
+    { path: 'video', redirectTo: 'app/video' },
+    { path: 'alarm', redirectTo: 'app/alarm' },
+    { path: 'mobile-stats', redirectTo: 'app/stats' },
+    { path: 'greetings', redirectTo: '' },
+    { path: '**', redirectTo: '' },
 ]

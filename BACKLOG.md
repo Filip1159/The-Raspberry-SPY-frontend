@@ -5,8 +5,8 @@ Shared backlog for both repos (`The-Raspberry-SPY-frontend` and `The-Raspberry-S
 ## Suggested order
 
 1. P0 security + resilience: B1, B2 (small, protects the live site)
-2. E4 (run both apps without a Raspberry) – unblocks local development and testing of everything below (B2 offline states, E1 tests, F1/F2 UI work against a mocked API)
-3. Portfolio restructure (F1) – everything else (UI, SEO) builds on the new page structure
+2. ✅ E4 (run both apps without a Raspberry) – unblocks local development and testing of everything below
+3. ✅ Portfolio restructure (F1) – everything else (UI, SEO) builds on the new page structure
 4. SEO (F3) and design pass (F2) together with the portfolio, since they touch the same pages
 5. Remaining P1/P2 items
 
@@ -32,7 +32,7 @@ The site is public, but Socket.IO used to have no auth: anyone could connect and
 - [x] FE: `backendStatusInterceptor` marks the backend offline on network errors (status 0) and on 502, 503, 504, 521-524 and 530 (Cloudflare when the tunnel is down), and online on any successful API response. 401 and other 4xx are not treated as offline.
 - [x] FE: global `backend-status-banner` with "Retry now"; login shows the offline message instead of "Wrong credentials" and disables submit; greetings and alarms disable submit, and alarms reload automatically after the Pi comes back; the stream page disables "Camera ON" while offline.
 - [x] FE: `<video>` errors show a message and a Retry button, and trigger a health check to tell "Pi offline" from "stream not available".
-- [ ] FE: the portfolio page must work fully when the backend is down; its Raspberry SPY section should show a live "Pi online/offline" badge instead of failing (builds on the new `BackendStatusService`, depends on F1).
+- [x] FE: the portfolio page works with the backend down and shows a live "Pi online/offline" badge in the Raspberry SPY section (done with F1).
 - [ ] FE: the control pad and brightness slider still look active while offline (their socket events are dropped silently) – disable them in F2.
 - [ ] FE: replace the remaining `alert()` calls with toasts (F2).
 
@@ -48,7 +48,7 @@ The site is public, but Socket.IO used to have no auth: anyone could connect and
 
 ## P1 – requested features
 
-### F1. Portfolio restructure [FE]
+### F1. Portfolio restructure [FE] ✅ implemented (content to be reviewed)
 
 Turn `/` (About me) into a personal **portfolio**, and keep the existing header + tabs design only for authorized users.
 
@@ -66,10 +66,14 @@ Turn `/` (About me) into a personal **portfolio**, and keep the existing header 
 - Authorized shell: current `HeaderComponent` + `MobileNavComponent` + `Stats`, wrapped in a layout route (`/app` with `authGuard` on the parent) so the portfolio never renders them.
 - Keep redirects for old URLs (`/video`, `/alarm`, `/greetings`, `/mobile-stats`) so existing bookmarks keep working.
 - Lazy-load the `/app/*` routes so the portfolio bundle stays small.
-- [ ] Layout routes + route reshuffle, update `AuthService.logout()` / `authGuard` redirects.
-- [ ] New portfolio page + nav, responsive.
-- [ ] Fix stale repo links (`raspberry-backend`, `raspberry-ui` -> `The-Raspberry-SPY-backend` / `-frontend`).
-- [ ] Remove the hardcoded "24 year old" text.
+- [x] Layout routes + route reshuffle: `/` portfolio, `/login`, guarded lazy `/app/*` shell, redirects for the old URLs, wildcard to `/`. (`AuthService.logout()` still goes to `/login`.)
+- [x] New portfolio page with its own fixed nav and anchors (hero, about, skills, projects with the Raspberry SPY featured, beyond code, contact), responsive down to phone width. The public page opens no websocket and loads no socket.io code.
+- [x] Stale repo links fixed. "Greet me" is an embedded widget in the Raspberry SPY section; "Sign in" is in the nav, the project card and the footer.
+- [x] The hardcoded "24 year old" text is gone.
+- [x] Raspberry SPY section shows a live online/offline badge (re-checked every 30 s) and keeps working when the backend is down.
+- [ ] Review the draft copy (`portfolio.data.ts`, `portfolio.html`): it only uses facts from the GitHub profile, but the wording, the project selection and the order are a first proposal.
+- [ ] Add screenshots/GIFs for the other projects (Gadget, Connect Messenger, Macau) and optimize `public/img/me.jpg` further (WebP/AVIF, `srcset`) – part of F3.
+- [ ] The login page is still a plain full-height page with the old styling – redesign in F2.
 
 **Content, based on https://github.com/Filip1159** (verify and edit wording – nothing below is invented text for publication, just material found on the profile)
 
@@ -86,7 +90,7 @@ Turn `/` (About me) into a personal **portfolio**, and keep the existing header 
     - Smaller embedded work: `Snake-EX2-AVR`, `Raspberry-Pico-Paint`, `STM32-NRF-lib`, `MAX-3-SAT-optimizer` (evolutionary algorithm), `openaigym-playground`.
 - Links already used on the site: GitHub, LinkedIn, Chess.com, Duolingo.
 - Sections: hero (photo, one-liner, CTA buttons), About, Experience/skills, Projects (cards with stack tags + repo/demo links, Raspberry SPY featured), Hobbies (3D printing, chess, languages), Contact.
-- [ ] **Open questions for Filip:** public contact channel (email/LinkedIn only?), CV download (PDF) yes/no, which employer details are OK to show, which projects to feature/hide, English only or also Polish.
+- [ ] **Open questions for Filip** (answered provisionally so far): contact channel = LinkedIn + GitHub only (no e-mail); no CV download; employer shown by name only as on the GitHub profile; featured projects = Raspberry SPY plus the six cards; English only.
 
 ### F2. Better UI/UX [FE]
 
@@ -105,7 +109,7 @@ Turn `/` (About me) into a personal **portfolio**, and keep the existing header 
 
 The site is a client-rendered SPA on GitHub Pages. Deep links currently work through a `404.html` copy of `index.html`, which makes Pages answer **HTTP 404** for every non-root URL – bad for crawlers.
 
-- [ ] `index.html`: real `<title>`, meta description, `<link rel="canonical">`, `theme-color`, Open Graph + Twitter card tags, social preview image (1200x630), favicon set (PNG sizes, apple-touch-icon, `site.webmanifest`).
+- [ ] `index.html`: (title and meta description are set, the rest is open) real `<title>`, meta description, `<link rel="canonical">`, `theme-color`, Open Graph + Twitter card tags, social preview image (1200x630), favicon set (PNG sizes, apple-touch-icon, `site.webmanifest`).
 - [ ] Per-route titles/meta via Angular `Title`/`Meta` (route `title` + a small `SeoService`), `noindex` on `/login` and `/app/*`.
 - [ ] Pre-render the public pages at build time (Angular SSG via `@angular/ssr` / prerender in the application builder) so crawlers get real HTML and real 200 responses; keep the `404.html` fallback only for the authorized SPA routes.
 - [ ] `public/robots.txt` (disallow `/app`, `/login`, link sitemap) and `public/sitemap.xml`; submit to Google Search Console (+ Bing).

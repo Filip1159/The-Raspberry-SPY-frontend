@@ -2,11 +2,13 @@ import { Component, inject, signal } from '@angular/core'
 import { FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms'
 import { Router } from '@angular/router'
 import { AuthService } from '../../service/auth.service'
+import { RouterLink } from '@angular/router'
+import { BackendStatusBanner } from '../backend-status-banner/backend-status-banner'
 import { BACKEND_OFFLINE_MESSAGE, BackendStatusService, isBackendUnreachable } from '../../service/backend-status.service'
 
 @Component({
     selector: 'app-login',
-    imports: [ReactiveFormsModule],
+    imports: [ReactiveFormsModule, RouterLink, BackendStatusBanner],
     templateUrl: './login.html',
     styleUrl: './login.scss',
 })
@@ -32,7 +34,7 @@ export class Login {
             next: res => {
                 this.auth.saveToken(res.access_token)
                 console.log('token saved')
-                this.router.navigate(['/video'])
+                this.router.navigate(['/app/video'])
             },
             error: err => this.error.set(isBackendUnreachable(err) ? BACKEND_OFFLINE_MESSAGE : 'Wrong credentials'),
         })
