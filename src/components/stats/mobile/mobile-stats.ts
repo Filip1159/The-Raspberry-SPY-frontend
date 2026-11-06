@@ -1,4 +1,4 @@
-import { Component, effect, ElementRef, HostListener, inject, signal } from '@angular/core'
+import { Component, effect, ElementRef, inject, signal } from '@angular/core'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faBolt, faMicrochip } from '@fortawesome/free-solid-svg-icons'
 import { faCloud } from '@fortawesome/free-regular-svg-icons'

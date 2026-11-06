@@ -52,10 +52,7 @@ export class AuthService implements OnDestroy {
         this.clearTimers()
 
         if (secondsUntilExpiry > 15) {
-            this.warningTimer = setTimeout(
-                () => alert('Your session is about to expire in 15 seconds'),
-                (secondsUntilExpiry - 15) * 1000
-            )
+            this.warningTimer = setTimeout(() => alert('Your session is about to expire in 15 seconds'), (secondsUntilExpiry - 15) * 1000)
             this.expirationTimer = setTimeout(() => {
                 this.logout()
             }, secondsUntilExpiry * 1000)
