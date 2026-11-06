@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core'
+import { afterNextRender, Component, inject, signal } from '@angular/core'
 import { RouterLink } from '@angular/router'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faChess } from '@fortawesome/free-solid-svg-icons'
@@ -15,7 +15,10 @@ import { RaspberrySpySection } from './raspberry-spy-section/raspberry-spy-secti
     styleUrl: './portfolio.scss',
 })
 export class Portfolio {
-    auth = inject(AuthService)
+    private auth = inject(AuthService)
+
+    // Resolved after hydration: the pre-rendered page always shows the signed-out state
+    signedIn = signal(false)
 
     faChess = faChess
     faDuolingo = faDuolingo
@@ -26,4 +29,8 @@ export class Portfolio {
     readonly skillGroups = SKILL_GROUPS
     readonly links = SOCIAL_LINKS
     readonly year = new Date().getFullYear()
+
+    constructor() {
+        afterNextRender(() => this.signedIn.set(this.auth.isLoggedIn()))
+    }
 }

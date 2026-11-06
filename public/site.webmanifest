@@ -1,0 +1,27 @@
+{
+    "name": "Filip Wiśniewski – Software Engineer",
+    "short_name": "Filip Wiśniewski",
+    "description": "Portfolio of Filip Wiśniewski, a software engineer at Ocado Technology building backend systems, embedded devices and 3D-printed gadgets, including The Raspberry SPY.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#c51d4a",
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "raspberry-pi.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}

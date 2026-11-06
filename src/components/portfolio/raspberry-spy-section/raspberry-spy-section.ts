@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core'
+import { afterNextRender, Component, inject, OnDestroy, signal } from '@angular/core'
 import { RouterLink } from '@angular/router'
 import { AuthService } from '../../../service/auth.service'
 import { BackendStatusService } from '../../../service/backend-status.service'
@@ -12,17 +12,23 @@ import { RASPBERRY_SPY } from '../portfolio.data'
     templateUrl: './raspberry-spy-section.html',
     styleUrl: './raspberry-spy-section.scss',
 })
-export class RaspberrySpySection implements OnInit, OnDestroy {
-    auth = inject(AuthService)
+export class RaspberrySpySection implements OnDestroy {
+    private auth = inject(AuthService)
     backendStatus = inject(BackendStatusService)
 
     readonly spy = RASPBERRY_SPY
 
     private statusTimer: ReturnType<typeof setInterval> | null = null
 
-    // Keeps the "Raspberry is online/offline" badge fresh while the visitor stays on the page
-    ngOnInit(): void {
-        this.statusTimer = setInterval(() => this.backendStatus.check(), 30000)
+    // Resolved after hydration: the pre-rendered page always shows the signed-out state
+    signedIn = signal(false)
+
+    constructor() {
+        afterNextRender(() => {
+            this.signedIn.set(this.auth.isLoggedIn())
+            // Keeps the "Raspberry is online/offline" badge fresh while the visitor stays on the page
+            this.statusTimer = setInterval(() => this.backendStatus.check(), 30000)
+        })
     }
 
     ngOnDestroy(): void {

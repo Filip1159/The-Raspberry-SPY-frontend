@@ -6,7 +6,7 @@
         <a href="#projects">Projects</a>
         <a href="#contact">Contact</a>
     </nav>
-    <a class="nav__panel" [routerLink]="auth.isLoggedIn() ? '/app/video' : '/login'">{{ auth.isLoggedIn() ? 'Control panel' : 'Sign in' }}</a>
+    <a class="nav__panel" [routerLink]="signedIn() ? '/app/video' : '/login'">{{ signedIn() ? 'Control panel' : 'Sign in' }}</a>
 </header>
 
 <main id="top" class="portfolio">
@@ -26,7 +26,17 @@
                 </a>
             </div>
         </div>
-        <img class="hero__photo" src="img/me.jpg" alt="Portrait of Filip Wiśniewski" width="300" height="400" />
+        <picture>
+            <source type="image/webp" srcset="img/me-400.webp 400w, img/me-800.webp 800w" sizes="(max-width: 800px) 200px, 300px" />
+            <img
+                class="hero__photo"
+                src="img/me.jpg"
+                alt="Portrait of Filip Wiśniewski"
+                width="300"
+                height="400"
+                fetchpriority="high"
+                decoding="async" />
+        </picture>
     </section>
 
     <section id="about" class="section">
@@ -75,7 +85,7 @@
                 </ul>
                 <div class="project__links">
                     @for (link of project.links; track link.url) {
-                    <a [href]="link.url" target="_blank" rel="noopener">{{ link.label }}</a>
+                    <a [href]="link.url" target="_blank" rel="noopener" [attr.aria-label]="project.name + ': ' + link.label">{{ link.label }}</a>
                     }
                 </div>
             </article>
@@ -124,5 +134,5 @@
 
 <footer class="footer">
     <span>© {{ year }} Filip Wiśniewski</span>
-    <a [routerLink]="auth.isLoggedIn() ? '/app/video' : '/login'">{{ auth.isLoggedIn() ? 'Control panel' : 'Sign in to the control panel' }}</a>
+    <a [routerLink]="signedIn() ? '/app/video' : '/login'">{{ signedIn() ? 'Control panel' : 'Sign in to the control panel' }}</a>
 </footer>

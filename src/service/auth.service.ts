@@ -1,4 +1,5 @@
-import { Injectable, signal, inject, OnDestroy } from '@angular/core'
+import { isPlatformBrowser } from '@angular/common'
+import { Injectable, signal, inject, OnDestroy, PLATFORM_ID } from '@angular/core'
 import { Router } from '@angular/router'
 import { RaspberryApi } from './raspberry.api'
 
@@ -7,7 +8,8 @@ export class AuthService implements OnDestroy {
     private api = inject(RaspberryApi)
     private router = inject(Router)
 
-    token = signal<string | null>(localStorage.getItem('jwt'))
+    // The portfolio is pre-rendered at build time, where there is no localStorage
+    token = signal<string | null>(isPlatformBrowser(inject(PLATFORM_ID)) ? localStorage.getItem('jwt') : null)
     private expirationTimer: ReturnType<typeof setTimeout> | null = null
     private warningTimer: ReturnType<typeof setTimeout> | null = null
 

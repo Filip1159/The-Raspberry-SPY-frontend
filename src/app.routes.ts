@@ -5,11 +5,12 @@ import { authGuard } from './service/auth.guard'
 
 export const routes: Routes = [
     { path: '', component: Portfolio, title: 'Filip Wiśniewski – Software Engineer' },
-    { path: 'login', component: Login, title: 'Sign in – The Raspberry SPY' },
+    { path: 'login', component: Login, title: 'Sign in – The Raspberry SPY', data: { noindex: true } },
     {
         path: 'app',
         loadComponent: () => import('./components/shell/app-shell').then(m => m.AppShell),
         canActivate: [authGuard],
+        data: { noindex: true },
         children: [
             { path: '', pathMatch: 'full', redirectTo: 'video' },
             {

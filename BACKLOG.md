@@ -4,11 +4,12 @@ Shared backlog for both repos (`The-Raspberry-SPY-frontend` and `The-Raspberry-S
 
 ## Suggested order
 
-1. P0 security + resilience: B1, B2 (small, protects the live site)
+1. ✅ P0 B1 (socket auth) and B2 (offline handling)
 2. ✅ E4 (run both apps without a Raspberry) – unblocks local development and testing of everything below
 3. ✅ Portfolio restructure (F1) – everything else (UI, SEO) builds on the new page structure
-4. SEO (F3) and design pass (F2) together with the portfolio, since they touch the same pages
-5. Remaining P1/P2 items
+4. ✅ SEO (F3)
+5. **Next:** B3 (backend hardening: password hashing, rate limiting, protect `GET /greetings`, melody validation) – still open, and it matters now that the site is public – then the design pass (F2)
+6. Remaining P1/P2 items
 
 ---
 
@@ -105,18 +106,22 @@ Turn `/` (About me) into a personal **portfolio**, and keep the existing header 
 - [ ] Skeleton/loading states; consistent empty and error states (ties in with B2).
 - [ ] Mobile pass on every page (the layout was just made mobile-friendly – keep that working).
 
-### F3. SEO [FE]
+### F3. SEO [FE] ✅ implemented (manual submission and polish pending)
 
-The site is a client-rendered SPA on GitHub Pages. Deep links currently work through a `404.html` copy of `index.html`, which makes Pages answer **HTTP 404** for every non-root URL – bad for crawlers.
+The site was a client-rendered SPA on GitHub Pages; the `404.html` trick made Pages answer HTTP 404 for every non-root URL. Now:
 
-- [ ] `index.html`: (title and meta description are set, the rest is open) real `<title>`, meta description, `<link rel="canonical">`, `theme-color`, Open Graph + Twitter card tags, social preview image (1200x630), favicon set (PNG sizes, apple-touch-icon, `site.webmanifest`).
-- [ ] Per-route titles/meta via Angular `Title`/`Meta` (route `title` + a small `SeoService`), `noindex` on `/login` and `/app/*`.
-- [ ] Pre-render the public pages at build time (Angular SSG via `@angular/ssr` / prerender in the application builder) so crawlers get real HTML and real 200 responses; keep the `404.html` fallback only for the authorized SPA routes.
-- [ ] `public/robots.txt` (disallow `/app`, `/login`, link sitemap) and `public/sitemap.xml`; submit to Google Search Console (+ Bing).
-- [ ] Structured data: JSON-LD `Person` (name, jobTitle, worksFor, sameAs = GitHub/LinkedIn), `WebSite`; `SoftwareSourceCode`/`CreativeWork` for featured projects.
-- [ ] Performance (Core Web Vitals): self-host Roboto (or `font-display: swap` + subset) instead of Google Fonts, optimize `me.jpg` (WebP/AVIF, `srcset`, explicit width/height, `loading`/`fetchpriority`), lazy-load routes, check bundle budgets in `angular.json`. Target Lighthouse >= 90 on all categories.
-- [ ] Semantic HTML (`h1` once per page, headings in order, `alt` text, descriptive link text), `lang="en"` (or `pl` + `hreflang` if Polish is added).
-- [ ] Make sure only one canonical host is indexed (apex `filipwisniewski.pl`; `www` redirects – Pages handles this when both are configured).
+- [x] `index.html`: title, meta description, canonical, `theme-color`, Open Graph + Twitter card tags with a 1200x630 preview image, favicon set (`.ico`, svg, 32 px png, apple-touch-icon), `site.webmanifest` with 192/512 icons.
+- [x] Per-route titles (route `title`) and `noindex, nofollow` on `/login` and `/app/*` through `SeoService` (route `data: { noindex: true }`). Only `/` is indexable, so no per-route descriptions are needed yet.
+- [x] The portfolio is pre-rendered at build time (`@angular/ssr`, static output, hydration): crawlers get the full HTML with a real 200. `index.csr.html` is copied to `404.html` for `/login` and `/app/*` only.
+- [x] `public/robots.txt` (disallows `/app/` and `/login`, links the sitemap) and `public/sitemap.xml`.
+- [ ] **Manual:** add `https://filipwisniewski.pl` to Google Search Console and Bing Webmaster Tools, verify the domain (DNS TXT record in Cloudflare) and submit the sitemap.
+- [x] Structured data: JSON-LD `WebSite` + `Person` (name, job title, employer, university, GitHub/LinkedIn as `sameAs`) in `index.html`. Not done: `SoftwareSourceCode`/`CreativeWork` entries for the featured projects.
+- [x] Performance: Roboto self-hosted (no Google Fonts requests), photos as WebP + JPEG fallback with `srcset`/`sizes`, explicit width/height, `fetchpriority="high"` on the hero image, lazy images below the fold, lazy `/app` routes, health check deferred to idle time, stylesheet budget raised to 4/8 kB.
+- [x] Semantic HTML: one `h1`, ordered headings, alt texts, links with distinct accessible names.
+- [x] One canonical host: apex domain (GitHub Pages redirects `www`).
+- **Lighthouse (local, production build):** desktop performance 97, accessibility 100, best practices 96\*, SEO 100. Mobile with real network throttling: performance 100 (FCP 0.8 s, LCP 1.9 s). Mobile with Lighthouse's default _simulated_ slow-4G: performance 75, accessibility 100, SEO 100 – the simulator penalizes the ~366 kB initial JS chunk (observed FCP/LCP on this machine are 265 ms). \*The best-practices deduction comes only from the local test: the page on `localhost` cannot call the real API because of CORS.
+- [ ] To reach >= 90 under the default mobile simulation: shrink the initial JavaScript, e.g. `@defer` the greeting form (drops `@angular/forms` and the form code from the first load), check what else lands in the shared chunk (FontAwesome, rxjs, router), and drop unused polyfills. Re-measure with `lighthouse https://filipwisniewski.pl` after deploying.
+- [ ] Re-run Lighthouse against production after the first deploy (real TLS, HTTP/2, caching headers from GitHub Pages).
 
 ---
 

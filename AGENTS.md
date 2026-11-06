@@ -7,6 +7,7 @@ Backend repo: `../The-Raspberry-SPY-backend` (Python/Flask). Planned work lives 
 ## Stack
 
 - Angular 21, **standalone components, zoneless** (`provideZonelessChangeDetection`), signals, `inject()`. No NgModules, no zone.js.
+- **The production build pre-renders the public portfolio** (`outputMode: static` + `prerender` in the `production` configuration, `@angular/ssr`): `dist/raspberry-ui/browser/index.html` is the finished portfolio page, `index.csr.html` is the client-only shell used for `/login` and `/app/*`. Dev and mock builds are client-only. Hydration is enabled.
 - TypeScript strict (`strictTemplates`, `noPropertyAccessFromIndexSignature`), SCSS, FontAwesome icons.
 - `socket.io-client` (websocket transport only) for live data and camera controls; `HttpClient` for REST; plain `<video src>` for HLS (native browser playback, no hls.js).
 - Tests: Karma + Jasmine (`ng test`). Lint: angular-eslint + prettier via eslint (`ng lint`).
@@ -18,7 +19,7 @@ npm ci
 npm start          # ng serve on 192.168.1.105 (hardcoded LAN IP of the dev machine – edit if needed), talks to the Pi
 npm run start:mock # no Raspberry needed: mock backend (mock-server/, :8080) + ng serve --configuration mock (:4200). Login demo / demo
 npm run start:ui   # only the UI in the mock configuration, e.g. against the real backend started with `python main.py --fake`
-npm run build      # production build -> dist/raspberry-ui/browser
+npm run build      # production build + pre-rendering -> dist/raspberry-ui/browser (index.html = portfolio, index.csr.html = SPA shell, copied to 404.html by deploy.yml)
 npm run lint       # must pass, CI fails otherwise
 npm run format     # prettier --write .
 npm test -- --browsers=ChromeHeadlessCI --watch=false
@@ -39,7 +40,7 @@ npm test -- --browsers=ChromeHeadlessCI --watch=false
 
 ```
 src/
-  main.ts, app.config.ts, app.routes.ts
+  main.ts, main.server.ts, app.config.ts, app.config.server.ts, app.routes.ts, app.routes.server.ts   # server routes: '' is pre-rendered, everything else client-side
   environment.ts          # dev: LAN IP of the Pi (http://192.168.1.105:8080/8888)
   environment.prod.ts     # prod: https://api.filipwisniewski.pl  (swapped in by angular.json fileReplacements)
   environment.mock.ts     # mock configuration: http://localhost:8080 (mock-server or the backend in fake mode), `mock: true`
@@ -56,8 +57,9 @@ src/
     raspberry.api.ts      # all REST calls; token passed manually per call (no interceptor)
     socket.service.ts     # single socket.io connection, listen<T>() returns Observable
     backend-status.service.ts / .interceptor.ts   # online/offline detection for the Raspberry (see Gotchas)
+    seo.service.ts        # adds `noindex` for routes with `data: { noindex: true }` (login, /app)
 mock-server/server.js      # Express + Socket.IO fake of the backend contract (health, login, alarms, greetings, stats, JWT handshake) + failure simulation
-public/                   # CNAME (custom domain – keep!), favicon, raspberry-pi.svg, img/ (web-sized portrait and project photos)
+public/                   # CNAME (custom domain – keep!), robots.txt, sitemap.xml, site.webmanifest, favicons/icons, raspberry-pi.svg, img/ (photos as jpg + webp, og-image.jpg for link previews)
 .github/workflows/        # ci.yml (lint+test on push/PR), deploy.yml (build + GitHub Pages on master)
 ```
 
@@ -95,3 +97,7 @@ public/                   # CNAME (custom domain – keep!), favicon, raspberry-
 - The Raspberry being off is a normal state. `BackendStatusService.status()` / `isOffline()` drive the global banner and disabled submit buttons; use `isBackendUnreachable(error)` and `BACKEND_OFFLINE_MESSAGE` in new error handlers instead of showing a generic failure. Do not inject `BackendStatusService` into code that runs while it is being constructed (its interceptor injects it lazily; `app.config.ts` triggers the first `check()` through an app initializer).
 - Portfolio copy lives in `portfolio.data.ts` and `portfolio.html`; keep it factual (taken from the GitHub profile) and don't add claims about Filip that are not public. The portfolio must not require the backend: it only shows the status badge, which re-checks `/health` every 30 s.
 - The `SocketService` (socket.io-client) must stay out of the portfolio bundle: only inject it from components inside the lazy `/app` area.
+- **Code that runs during the pre-render must be server-safe**: no `localStorage`, `window` or `document` at construction time and no calls to the Raspberry. Use `isPlatformBrowser(inject(PLATFORM_ID))` or `afterNextRender()` (see `AuthService`, the app initializer in `app.config.ts`, `Portfolio`). State that differs per visitor (signed in or not) must be resolved in `afterNextRender`, otherwise hydration mismatches the pre-rendered HTML.
+- SEO basics live in three places: `src/index.html` (title, description, canonical, Open Graph/Twitter, JSON-LD, icons), `public/` (robots, sitemap, manifest, images) and `SeoService` (noindex). The domain `https://filipwisniewski.pl` is hardcoded in `index.html` and `sitemap.xml`. When adding a public route add it to `sitemap.xml`, `app.routes.server.ts` (`RenderMode.Prerender`) and give it a route `title`.
+- The social preview, icons and webp images were generated with throw-away puppeteer/sharp scripts (not in the repo); keep `og-image.jpg` at 1200x630.
+- Fonts (Roboto 400/700, latin and latin-ext for the Polish letters) are self-hosted through `@fontsource/roboto` entries in `angular.json` `styles`; do not add Google Fonts links back.

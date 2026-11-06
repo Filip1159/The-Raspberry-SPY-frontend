@@ -28,7 +28,13 @@
                                 "input": "public"
                             }
                         ],
-                        "styles": ["src/styles.scss"],
+                        "styles": [
+                            "@fontsource/roboto/latin-400.css",
+                            "@fontsource/roboto/latin-700.css",
+                            "@fontsource/roboto/latin-ext-400.css",
+                            "@fontsource/roboto/latin-ext-700.css",
+                            "src/styles.scss"
+                        ],
                         "scripts": []
                     },
                     "configurations": {
@@ -51,7 +57,10 @@
                                     "with": "src/environment.prod.ts"
                                 }
                             ],
-                            "outputHashing": "all"
+                            "outputHashing": "all",
+                            "server": "src/main.server.ts",
+                            "outputMode": "static",
+                            "prerender": true
                         },
                         "development": {
                             "optimization": false,

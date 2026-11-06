@@ -31,21 +31,40 @@
             </ul>
             <div class="spy__links">
                 @for (link of spy.links; track link.url) {
-                <a [href]="link.url" target="_blank" rel="noopener">{{ link.label }}</a>
+                <a [href]="link.url" target="_blank" rel="noopener" [attr.aria-label]="'The Raspberry SPY: ' + link.label">{{ link.label }}</a>
                 }
             </div>
-            <a class="button" [routerLink]="auth.isLoggedIn() ? '/app/video' : '/login'">
-                {{ auth.isLoggedIn() ? 'Open the control panel' : 'Sign in to the control panel' }}
+            <a class="button" [routerLink]="signedIn() ? '/app/video' : '/login'">
+                {{ signedIn() ? 'Open the control panel' : 'Sign in to the control panel' }}
             </a>
         </div>
         <div class="spy__gallery">
-            <img
-                src="img/spy-overview.jpg"
-                alt="The Raspberry SPY: Raspberry Pi with a camera on a 3D-printed stand"
-                width="500"
-                height="500"
-                loading="lazy" />
-            <img src="img/spy-camera.jpg" alt="Close-up of the camera and the pan/tilt servos" width="500" height="500" loading="lazy" />
+            <picture>
+                <source
+                    type="image/webp"
+                    srcset="img/spy-overview-500.webp 500w, img/spy-overview-1000.webp 1000w"
+                    sizes="(max-width: 800px) 45vw, 230px" />
+                <img
+                    src="img/spy-overview.jpg"
+                    alt="The Raspberry SPY: Raspberry Pi with a camera on a 3D-printed stand"
+                    width="500"
+                    height="500"
+                    loading="lazy"
+                    decoding="async" />
+            </picture>
+            <picture>
+                <source
+                    type="image/webp"
+                    srcset="img/spy-camera-500.webp 500w, img/spy-camera-1000.webp 1000w"
+                    sizes="(max-width: 800px) 45vw, 230px" />
+                <img
+                    src="img/spy-camera.jpg"
+                    alt="Close-up of the camera and the pan/tilt servos"
+                    width="500"
+                    height="500"
+                    loading="lazy"
+                    decoding="async" />
+            </picture>
         </div>
     </div>
 

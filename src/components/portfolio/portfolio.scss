@@ -70,6 +70,10 @@ $surface: #f6f7f9;
     padding-top: 64px;
 }
 
+.hero picture {
+    display: contents;
+}
+
 .hero {
     display: grid;
     grid-template-columns: 1fr auto;
