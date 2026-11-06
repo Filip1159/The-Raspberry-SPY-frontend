@@ -2,7 +2,7 @@
 
 Angular SPA: Filip's **portfolio** (public, `/`) plus the control panel of a home-built Raspberry Pi 5 camera/alarm system (signed-in area, `/app/*`). Hosted on **GitHub Pages** at `https://filipwisniewski.pl`. The backend runs on the Raspberry at home and is exposed through a **Cloudflare Tunnel** at `https://api.filipwisniewski.pl`. When the Pi is off, the backend is unreachable – that is a normal state, not a bug.
 
-Backend repo: `../The-Raspberry-SPY-backend` (Python/Flask). Planned work lives in `BACKLOG.md` (covers both repos).
+Backend repo: `../The-Raspberry-SPY-backend` (Python/FastAPI). Planned work lives in `BACKLOG.md` (covers both repos).
 
 ## Stack
 
@@ -77,7 +77,7 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 - `POST /login` `{username,password}` -> `{access_token, expires_at}`; RS256 JWT, 30 min lifetime, no refresh.
 - `GET/POST /alarms`, `POST /alarms/play`, `GET /greetings`: `Authorization: Bearer <jwt>`. `POST /greetings` is public (max 500 characters, 3/min and 20/h per visitor). `POST /login` allows 5 failed attempts per minute per visitor; both answer `429` when exceeded, which the UI must show as "too many attempts", not as "offline".
 - `GET /health` (public) is the liveness probe used by `BackendStatusService`.
-- All REST goes through `env.backendApiUrl` = `<host>/flask` (nginx strips `/flask`).
+- All REST goes through `env.backendApiUrl` = `<host>/api` (nginx strips `/api`; the old `/flask` alias still works on the Pi until it is removed).
 - Socket.IO on `env.websocketUrl` (`/socket.io`) requires a valid JWT in the handshake (`auth: { token }`); otherwise the server refuses with `unauthorized`. `SocketService` connects only while a token exists and logs out on `unauthorized`. Server pushes every 5 s: `system_stats_update` `{cpuUsage,cpuTemperature,ramUsage}` and `ble_update` `{humidity,temperature,voltage,lastUpdated}`. Client sends event `message` with a direction name (`UP`, `DOWN_LEFT`, `CENTER`, …) or `LED<0-255>`.
 - HLS: `${env.hlsUrl}/cam1/index.m3u8?jwt=<token>` (MediaMTX validates the same JWT).
 - Backend CORS only allows `https://filipwisniewski.pl` (+ `www`). For local dev against the Pi, set `EXTRA_ALLOWED_ORIGINS` on the backend.

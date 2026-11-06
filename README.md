@@ -33,7 +33,7 @@ A custom-made 3D printed frame with a tall camera stand. See it in [Makerworld](
 
 :cd: Raspberry Pi OS
 
-:snake: TypeScript + Angular. [Backend](https://github.com/Filip1159/The-Raspberry-SPY-backend) written in Python + Flask. As a Java developer I keep struggling with this language, but I find it really educational
+:snake: TypeScript + Angular. [Backend](https://github.com/Filip1159/The-Raspberry-SPY-backend) written in Python + FastAPI. As a Java developer I keep struggling with this language, but I find it really educational
 
 :traffic_light: `gpiozero` python library for Raspberry Pi that handles raw GPIO communication
 

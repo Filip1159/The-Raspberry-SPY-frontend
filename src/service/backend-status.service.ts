@@ -10,7 +10,7 @@ export const BACKEND_OFFLINE_MESSAGE = 'The Raspberry is probably switched off o
 const HEALTH_TIMEOUT_MS = 5000
 const RETRY_INTERVAL_MS = 15000
 
-// 0 = network error / CORS / timeout, 502-504 = nginx or Flask down, 521-524 and 530 = Cloudflare cannot reach the tunnel
+// 0 = network error / CORS / timeout, 502-504 = nginx or the backend down, 521-524 and 530 = Cloudflare cannot reach the tunnel
 const UNREACHABLE_HTTP_STATUSES = [0, 502, 503, 504, 521, 522, 523, 524, 530]
 
 export function isBackendUnreachable(error: unknown): boolean {

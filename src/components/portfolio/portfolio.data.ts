@@ -58,6 +58,7 @@ export const SKILL_GROUPS: SkillGroup[] = [
             'STM32',
             'Python',
             'Flask',
+            'FastAPI',
             'PyTorch',
             'Angular',
             'Vue',
@@ -127,7 +128,7 @@ export const RASPBERRY_SPY = {
         'Local interface: 20x4 LCD with a rotary encoder',
         'BLE climate monitoring and live Raspberry stats',
     ],
-    tags: ['Raspberry Pi 5', 'Angular', 'Python', 'Flask', 'Socket.IO', 'MediaMTX', 'nginx', 'Cloudflare Tunnel', '3D printing'],
+    tags: ['Raspberry Pi 5', 'Angular', 'Python', 'FastAPI', 'Socket.IO', 'MediaMTX', 'nginx', 'Cloudflare Tunnel', '3D printing'],
     links: [
         { label: 'Frontend repo', url: `${GITHUB}/The-Raspberry-SPY-frontend` },
         { label: 'Backend repo', url: `${GITHUB}/The-Raspberry-SPY-backend` },
