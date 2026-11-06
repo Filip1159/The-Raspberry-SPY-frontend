@@ -4,6 +4,9 @@
     "scripts": {
         "ng": "ng",
         "start": "ng serve -o --host 192.168.1.105",
+        "mock-server": "node mock-server/server.js",
+        "start:ui": "ng serve --configuration mock",
+        "start:mock": "concurrently --kill-others --names mock,ng \"npm run mock-server\" \"ng serve --configuration mock\"",
         "build": "ng build --configuration production",
         "watch": "ng build --watch --configuration development",
         "test": "ng test",
@@ -34,9 +37,12 @@
         "@angular/compiler-cli": "21.0.0",
         "@types/jasmine": "5.1.13",
         "angular-eslint": "21.1.0",
+        "concurrently": "10.0.6",
+        "cors": "2.8.6",
         "eslint": "9.39.1",
         "eslint-config-prettier": "10.1.8",
         "eslint-plugin-prettier": "5.5.4",
+        "express": "5.3.0",
         "jasmine-core": "5.12.1",
         "karma": "6.4.4",
         "karma-chrome-launcher": "3.2.0",
@@ -44,6 +50,7 @@
         "karma-jasmine": "5.1.0",
         "karma-jasmine-html-reporter": "2.1.0",
         "prettier": "3.7.4",
+        "socket.io": "4.8.4",
         "typescript": "5.9.3",
         "typescript-eslint": "8.47.0"
     }

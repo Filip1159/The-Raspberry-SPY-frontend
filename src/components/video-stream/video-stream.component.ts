@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, signal, ViewChild } from '@angular/core'
+import { Component, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core'
 import { SocketService } from '../../service/socket.service'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faAngleUp, faArrowsToCircle, faLightbulb } from '@fortawesome/free-solid-svg-icons'
@@ -7,6 +7,7 @@ import { Slider } from './slider/slider'
 import { env } from './../../environment'
 import { AuthService } from '../../service/auth.service'
 import { BACKEND_OFFLINE_MESSAGE, BackendStatusService } from '../../service/backend-status.service'
+import type { MockCamera } from './mock-camera'
 
 @Component({
     selector: 'app-video-stream',
@@ -15,7 +16,7 @@ import { BACKEND_OFFLINE_MESSAGE, BackendStatusService } from '../../service/bac
     templateUrl: './video-stream.component.html',
     styleUrl: './video-stream.component.scss',
 })
-export class VideoStreamComponent {
+export class VideoStreamComponent implements OnDestroy {
     @ViewChild('video', { static: false })
     private video!: ElementRef<HTMLVideoElement>
 
@@ -32,10 +33,21 @@ export class VideoStreamComponent {
     streamError = signal(false)
     brightness = 100
 
-    cameraOn() {
+    private mockCamera: MockCamera | null = null
+
+    async cameraOn() {
         this.streamError.set(false)
-        this.video.nativeElement.src = `${env.hlsUrl}/cam1/index.m3u8?jwt=${this.auth.token()}`
-        this.video.nativeElement.onloadeddata = () => this.video.nativeElement.play()
+        const video = this.video.nativeElement
+        if (env.mock) {
+            // No HLS stream without a Raspberry: show a generated test pattern instead
+            const { createMockCameraStream } = await import('./mock-camera')
+            this.mockCamera?.stop()
+            this.mockCamera = createMockCameraStream()
+            video.srcObject = this.mockCamera.stream
+        } else {
+            video.src = `${env.hlsUrl}/cam1/index.m3u8?jwt=${this.auth.token()}`
+        }
+        video.onloadeddata = () => video.play()
         this.cameraTurnedOn.set(true)
     }
 
@@ -52,5 +64,9 @@ export class VideoStreamComponent {
 
     setBrightness(value: number): void {
         this.socket.emit('message', `LED${value}`)
+    }
+
+    ngOnDestroy(): void {
+        this.mockCamera?.stop()
     }
 }

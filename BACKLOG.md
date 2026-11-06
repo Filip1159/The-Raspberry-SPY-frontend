@@ -144,38 +144,35 @@ The site is a client-rendered SPA on GitHub Pages. Deep links currently work thr
 - [ ] Remove dead commented-out code in `gpio.py`; `logging` instead of `print`.
 - [ ] Move greetings/alarms JSON writes behind a lock / atomic write (concurrent requests can corrupt the file).
 
-### E4. Run both apps without a Raspberry [BE][FE]
+### E4. Run both apps without a Raspberry [BE][FE] ✅ implemented (optional parts pending)
 
-Today the backend only starts on the Pi (GPIO libraries are imported and hardware objects are created at import time) and the frontend always needs that backend. Goal: on a fresh clone on any laptop, run both apps with a few commands, log in, see live stats, use the camera controls and manage alarms. Not started – design notes below.
+Fresh clone on any machine: the backend runs with simulated hardware and the UI runs against a mock server (or against that backend).
 
 **Backend: hardware independence**
 
-- [ ] Hardware abstraction layer: small interfaces (`Protocol`/ABC) for the servos (pan/tilt), camera light, LCD, rotary encoder + button, buzzer/melody output, CPU temperature, BLE climate sensor, Arduino websocket link and the ACT LED. Business logic (`alarm_manager`, `navigation`, controllers) depends only on these interfaces.
-- [ ] Real implementations (`gpiozero`, `RPLCD`, `rpi_hardware_pwm`, `bleak`, sysfs) live in one package, e.g. `app/hardware/raspberry/`. Fake implementations in `app/hardware/fake/`: servos and light keep state in memory and log changes, the buzzer logs the melody name and duration, the LCD prints to the terminal (or is disabled), the encoder/button are no-ops (optionally driven by keyboard), BLE/CPU/RAM values follow a small random walk so the UI charts move.
-- [ ] One composition root (`app/hardware/__init__.py` or `app/container.py`) chooses the implementation from `HARDWARE=raspberry|fake` (default: auto-detect Raspberry via `/proc/device-tree/model`, else fake). Remove import-time side effects and the module-level singletons that create hardware (`gpio.py`, `servos_controller`, `melody_player`, `ble_manager`).
-- [ ] Import Pi-only libraries lazily inside the real implementations; split dependencies into `requirements.txt` (core: Flask, Flask-SocketIO, JWT, psutil, ...) and `requirements-raspberry.txt` (`gpiozero`, `lgpio`, `rpi-lgpio`, `rpi_hardware_pwm`, `RPLCD`, `smbus2`, `bleak`, `dbus-fast`, ...), so `pip install -r requirements.txt` works on macOS/Windows/Linux.
-- [ ] Central config module (also covers the hardcoded paths from E3): data dir, port, users file, key paths, allowed origins, hardware mode – with dev-friendly defaults.
-- [ ] Dev bootstrap script (`scripts/dev_setup.py`): generates a throwaway RS256 key pair and a sample `users.json`, creates empty `alarms.json`/`greetings.json` in a temp/data dir.
-- [ ] Camera/HLS for local dev, pick one: (a) no stream, the UI shows a "no camera in dev mode" placeholder; (b) `docker-compose.dev.yml` with MediaMTX + ffmpeg publishing a test pattern or looping sample video to `cam1`, with `authJWTJWKS` pointing at the local Flask. Recommended: ship (a) first, add (b) afterwards.
-- [ ] No `sudo`/`os.system` on non-Pi (the ACT LED handling goes behind the hardware interface).
-- [ ] Entry points: `python main.py` (auto) and `python main.py --fake`; document in README/`AGENTS.md` and update the "only runs on the Pi" notes in both `AGENTS.md` files.
-- [ ] Tests (E1) use the fake hardware: alarms scheduling, socket auth, controllers via the Flask test client; run in GitHub Actions on Ubuntu.
+- [x] Hardware abstraction (`app/hardware/interfaces.py`): PWM channel, light, LCD, encoder, button, buzzer (`play_tone`), status LED, climate sensor. Business logic (`alarm_manager`, `navigation`, `melody_player`, `servos_controller`, controllers) depends only on these.
+- [x] Real implementations in `app/hardware/raspberry.py` (gpiozero, RPLCD, rpi_hardware_pwm, bleak, sysfs LED), simulated ones in `app/hardware/fake.py` (state kept in memory, LCD buffer, random-walk climate/CPU values).
+- [x] One composition root, `get_hardware()`: `--fake` argument, `HARDWARE=raspberry|fake`, or auto-detection of a Raspberry; Pi-only libraries are imported only in raspberry mode. The LCD/encoder loop moved to `app/local_interface.py` and starts explicitly from `main.py`, no longer as an import side effect.
+- [x] Dependencies split: `requirements.txt` (core), `requirements-raspberry.txt` (core + hardware), `requirements-dev.txt` (core + pytest + ruff). `websockets` was missing from the old file and is now listed.
+- [x] `app/config.py`: data dir, file paths and port (env overridable); fake mode defaults to the gitignored `.dev-data/`. Removes the hardcoded `/home/fwisn/...` paths (E3) – on the Pi the default is `<checkout>/resources`, set `DATA_DIR` if that differs.
+- [x] `scripts/dev_setup.py` generates the RS256 key pair, `users.json` (demo / demo), alarms and greetings.
+- [x] No `sudo`/`os.system` outside the Raspberry implementation; CPU temperature falls back to a simulated value.
+- [x] Tests (`tests/`, 24 tests: API, JWT/CORS, socket auth, fake hardware, LCD navigation) and a backend GitHub Actions workflow (ruff + pytest, Python 3.11, core requirements only).
+- [ ] Camera/HLS for local dev with a real picture: `docker-compose.dev.yml` with MediaMTX + an ffmpeg test source publishing to `cam1`, with `authJWTJWKS` pointing at the local Flask. (Without it the UI uses the generated test pattern.)
+- [ ] Replace the remaining import-time singletons (`alarm_manager`, `melody_player`, `servos_controller`) with a small container created in `main.py`, so tests can build isolated instances.
+- [ ] Verify on Windows (paths, `Timer`, signals); only macOS/Linux were exercised.
+- [ ] Pi: run the new code on the real hardware once (nothing in `app/hardware/raspberry.py` could be executed here), then update the deploy notes if needed.
 
 **Frontend: mocked backend**
 
-- [ ] A standalone mock server in `mock-server/` (Node + Express + `socket.io`, dev dependency only) that implements the backend contract from `AGENTS.md`: `GET /health` (B2), `POST /login` (demo credentials, returns a JWT with a real `exp`), `GET/POST /alarms` and `POST /alarms/play` (in memory), `POST /greetings`, and Socket.IO with the same handshake auth rule as the real backend, the 5 s `system_stats_update`/`ble_update` broadcasts with randomized values, and logging of `message` events. Rationale for a server over in-browser mocking (MSW or an Angular interceptor): it exercises the real HTTP/socket code paths, CORS and the auth handshake, and it can be reused for Playwright E2E tests (P2).
-- [ ] Angular `mock` configuration: `environment.mock.ts` (pointing at `http://localhost:<port>`), an `angular.json` build/serve configuration, and `npm run start:mock` that starts the mock server and `ng serve` together (e.g. `concurrently`). Fix the hardcoded LAN IP in `npm start` while at it (E2).
-- [ ] Video in mock mode: serve a looping sample as HLS (a small pre-generated `.m3u8` + segments checked in or generated with `ffmpeg`), or fall back to a static placeholder when `env.mock` is set.
-- [ ] Failure simulation for B2/F2 work: mock-server controls (query param, admin endpoint or key combo) to go "offline", respond slowly, return 401/500, and drop the socket, so every offline/error state in the UI can be tested without unplugging a Pi.
-- [ ] Keep the contract in one place: an `openapi.yaml` for REST plus a short socket events section, shared by the real backend docs and the mock server; add a simple contract test (the mock server and the real backend in fake mode must answer the same requests with the same shapes).
-- [ ] Document in `AGENTS.md` / README: `npm run start:mock`, demo credentials, how to point the UI at the real backend in fake mode instead (`EXTRA_ALLOWED_ORIGINS=http://localhost:4200`).
+- [x] `mock-server/server.js` (Express + Socket.IO, dev dependencies): `/health`, `/login` (demo / demo, HS256 JWT with a real `exp`), `/alarms`, `/alarms/play`, `/greetings`, Socket.IO handshake auth with `unauthorized`, 5 s `system_stats_update`/`ble_update` broadcasts, logging of control events.
+- [x] Angular `mock` configuration (`environment.mock.ts`, `angular.json`), `npm run start:mock` (mock server + `ng serve`) and `npm run start:ui` (UI only, for the real backend in fake mode). Fixing the hardcoded LAN IP in `npm start` stays with E2.
+- [x] Stream page in mock mode shows a generated test pattern (lazy-loaded `mock-camera.ts`) instead of HLS.
+- [x] Failure simulation through `POST /__mock/config` (`offline`, `latencyMs`, `failWith`), documented in `AGENTS.md`; `offline` drops sockets abruptly like a dead Pi.
+- [ ] Contract in one place: `openapi.yaml` for REST plus a socket events section, and a contract test that runs the mock server and the real backend (fake mode) against the same requests.
+- [ ] Add the mock server and a few Playwright flows to CI (login, alarms, offline banner) – ties in with E1. The flow was verified manually with a headless-Chrome script (login, wrong password, stats, camera, alarms, offline banner and recovery) against both the mock server and the fake-mode backend.
 
-**Acceptance criteria**
-
-- Fresh clone + `pip install -r requirements.txt` + `python scripts/dev_setup.py` + `python main.py --fake` starts the backend on a non-Pi machine.
-- `npm ci && npm run start:mock` starts the UI against the mock server; login, alarms, greetings, live stats and camera controls all work.
-- The UI also works against the fake-hardware backend, and CI runs backend tests and the mocked UI flows without a Raspberry.
-- Behavior on the real Pi is unchanged (`HARDWARE=raspberry` or auto-detect).
+**Acceptance criteria – verified:** `pip install -r requirements.txt` + `python scripts/dev_setup.py` + `python main.py --fake` starts the backend on a laptop; `npm ci && npm run start:mock` starts the UI, and login, alarms, stats, camera controls and the offline simulation work; the UI also works against the fake-mode backend. Behavior on the real Pi should be unchanged but is unverified until the next deploy.
 
 ---
 

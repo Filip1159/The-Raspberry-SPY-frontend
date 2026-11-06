@@ -57,6 +57,17 @@
                             "optimization": false,
                             "extractLicenses": false,
                             "sourceMap": true
+                        },
+                        "mock": {
+                            "optimization": false,
+                            "extractLicenses": false,
+                            "sourceMap": true,
+                            "fileReplacements": [
+                                {
+                                    "replace": "src/environment.ts",
+                                    "with": "src/environment.mock.ts"
+                                }
+                            ]
                         }
                     },
                     "defaultConfiguration": "production"
@@ -69,6 +80,9 @@
                         },
                         "development": {
                             "buildTarget": "raspberry-ui:build:development"
+                        },
+                        "mock": {
+                            "buildTarget": "raspberry-ui:build:mock"
                         }
                     },
                     "defaultConfiguration": "development"

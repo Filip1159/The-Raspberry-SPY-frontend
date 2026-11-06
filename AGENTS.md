@@ -15,7 +15,9 @@ Backend repo: `../The-Raspberry-SPY-backend` (Python/Flask). Planned work lives 
 
 ```bash
 npm ci
-npm start          # ng serve on 192.168.1.105 (hardcoded LAN IP of the dev machine – edit if needed)
+npm start          # ng serve on 192.168.1.105 (hardcoded LAN IP of the dev machine – edit if needed), talks to the Pi
+npm run start:mock # no Raspberry needed: mock backend (mock-server/, :8080) + ng serve --configuration mock (:4200). Login demo / demo
+npm run start:ui   # only the UI in the mock configuration, e.g. against the real backend started with `python main.py --fake`
 npm run build      # production build -> dist/raspberry-ui/browser
 npm run lint       # must pass, CI fails otherwise
 npm run format     # prettier --write .
@@ -29,6 +31,7 @@ src/
   main.ts, app.config.ts, app.routes.ts
   environment.ts          # dev: LAN IP of the Pi (http://192.168.1.105:8080/8888)
   environment.prod.ts     # prod: https://api.filipwisniewski.pl  (swapped in by angular.json fileReplacements)
+  environment.mock.ts     # mock configuration: http://localhost:8080 (mock-server or the backend in fake mode), `mock: true`
   components/
     root/                 # <backend-status-banner/> + <app-header/> + <mobile-nav/> + <router-outlet/>
     backend-status-banner/ # "Raspberry is probably switched off" bar
@@ -41,6 +44,7 @@ src/
     raspberry.api.ts      # all REST calls; token passed manually per call (no interceptor)
     socket.service.ts     # single socket.io connection, listen<T>() returns Observable
     backend-status.service.ts / .interceptor.ts   # online/offline detection for the Raspberry (see Gotchas)
+mock-server/server.js      # Express + Socket.IO fake of the backend contract (health, login, alarms, greetings, stats, JWT handshake) + failure simulation
 public/                   # CNAME (custom domain – keep!), favicon, me.jpg, raspberry-pi.svg
 .github/workflows/        # ci.yml (lint+test on push/PR), deploy.yml (build + GitHub Pages on master)
 ```
@@ -54,6 +58,13 @@ public/                   # CNAME (custom domain – keep!), favicon, me.jpg, ra
 - Socket.IO on `env.websocketUrl` (`/socket.io`) requires a valid JWT in the handshake (`auth: { token }`); otherwise the server refuses with `unauthorized`. `SocketService` connects only while a token exists and logs out on `unauthorized`. Server pushes every 5 s: `system_stats_update` `{cpuUsage,cpuTemperature,ramUsage}` and `ble_update` `{humidity,temperature,voltage,lastUpdated}`. Client sends event `message` with a direction name (`UP`, `DOWN_LEFT`, `CENTER`, …) or `LED<0-255>`.
 - HLS: `${env.hlsUrl}/cam1/index.m3u8?jwt=<token>` (MediaMTX validates the same JWT).
 - Backend CORS only allows `https://filipwisniewski.pl` (+ `www`). For local dev against the Pi, set `EXTRA_ALLOWED_ORIGINS` on the backend.
+
+## Mock backend (no Raspberry)
+
+- `mock-server/server.js` implements the same contract as the real backend, so keep it in sync whenever an endpoint, payload or socket event changes (also change `../The-Raspberry-SPY-backend` and the contract section above).
+- Failure simulation for testing offline/error states: `curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"offline": true}'` (also `latencyMs`, `failWith: 500`); reset with `{"offline": false, "latencyMs": 0, "failWith": null}`. `offline` drops the sockets abruptly, like a Pi that lost power.
+- With `env.mock` the stream page shows a generated test pattern (`video-stream/mock-camera.ts`, lazy-loaded) instead of HLS.
+- The same `mock` configuration works against the real backend in fake-hardware mode (`python main.py --fake`, demo / demo).
 
 ## Conventions
 
