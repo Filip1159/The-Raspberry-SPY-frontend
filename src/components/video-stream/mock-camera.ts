@@ -38,7 +38,7 @@ export function createMockCameraStream(): MockCamera {
             context.stroke()
         }
 
-        context.fillStyle = '#c51d4a'
+        context.fillStyle = '#0f766e'
         context.beginPath()
         context.arc(WIDTH / 2 + Math.cos(t) * 220, HEIGHT / 2 + Math.sin(t * 1.3) * 120, 36, 0, Math.PI * 2)
         context.fill()

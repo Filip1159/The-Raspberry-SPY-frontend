@@ -53,7 +53,7 @@ src/
     root/                 # <router-outlet/> + <toasts/>
     portfolio/            # public landing page: portfolio.ts/html/scss, portfolio.data.ts (ALL copy: skills, projects, links), raspberry-spy-section/ (status badge + gallery + embedded greeting form)
     shell/                # AppShell: layout of the signed-in area
-    header/ (+ mobile/)   # red header with tabs (Live stream, Alarm, Stats, Portfolio), theme toggle, sign out; compact on phones + bottom nav
+    header/ (+ mobile/)   # teal header with tabs (Live stream, Alarm, Stats, Portfolio), theme toggle, sign out; compact on phones + bottom nav
     backend-status-banner/ # "Raspberry is probably switched off" bar (shell + login)
     toasts/  theme-toggle/  sparkline/   # small shared UI pieces
     login/  greetings/ (embedded widget, not a page)  alarm-manager/ (+ alarm/)  video-stream/ (+ slider, longpress-button, mock-camera)  stats/ (stats-page)
