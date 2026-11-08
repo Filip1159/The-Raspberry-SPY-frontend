@@ -45,6 +45,9 @@ export async function playWithHls({ video, url, token, onFallback, onFatalError 
         liveMaxLatencyDuration: 6,
         maxLiveSyncPlaybackRate: 1.1,
         backBufferLength: 10,
+        // the camera starts on demand: the first playlist request is held until it is up (a few seconds)
+        manifestLoadingTimeOut: 20_000,
+        manifestLoadingMaxRetry: 2,
         // the access token lives 30 minutes, the stream longer: every playlist/segment request carries the current one
         xhrSetup: (xhr, requestUrl) => xhr.open('GET', withToken(requestUrl, token()), true),
         fetchSetup: (context, init) => new Request(withToken(context.url, token()), init),

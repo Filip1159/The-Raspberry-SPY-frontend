@@ -86,6 +86,8 @@ describe('playWithHls', () => {
         expect(instance().loadSource).toHaveBeenCalledWith(`${URL}?jwt=first`)
         expect(instance().attachMedia).toHaveBeenCalledWith(video)
         expect(hlsMock.state.config['lowLatencyMode']).toBe(true)
+        // the on-demand camera holds the first playlist request until it is up
+        expect(hlsMock.state.config['manifestLoadingTimeOut']).toBeGreaterThanOrEqual(15_000)
     })
 
     it('puts the current token on every later request', async () => {
