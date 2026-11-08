@@ -48,6 +48,19 @@ test('camera stream settings can be changed, applied and survive a reload', asyn
     await expect(page.getByLabel('Resolution')).toHaveValue('1280x720')
 })
 
+test('applying camera settings restarts a running stream through the socket event', async ({ page }) => {
+    await page.getByRole('button', { name: 'Turn the camera on' }).click()
+    await expect(page.getByText('LIVE', { exact: true })).toBeVisible({ timeout: 15_000 })
+
+    await page.getByText('Stream settings').click()
+    await page.getByLabel('Frame rate').fill('20')
+    await page.getByRole('button', { name: 'Apply' }).click()
+
+    // the mock backend pushes camera_stream_restart: the player shows "connecting" and then reconnects
+    await expect(page.getByText('Connecting to the camera...')).toBeVisible()
+    await expect(page.getByText('LIVE', { exact: true })).toBeVisible({ timeout: 15_000 })
+})
+
 test('camera settings that the camera service did not take yet are marked as such', async ({ page }) => {
     await setMock({ cameraApplied: false })
     await page.reload()

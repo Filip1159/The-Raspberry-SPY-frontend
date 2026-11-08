@@ -2,6 +2,7 @@ import { Mock, vi } from 'vitest'
 import { provideHttpClient } from '@angular/common/http'
 import { provideHttpClientTesting } from '@angular/common/http/testing'
 import { signal } from '@angular/core'
+import { Subject } from 'rxjs'
 import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { BackendStatusService } from '../../service/backend-status.service'
 import { ToastService } from '../../service/toast.service'
@@ -37,6 +38,7 @@ describe('VideoStream', () => {
     let emit: Mock
     let connected: ReturnType<typeof signal<boolean>>
     let streamToken: { start: Mock; stop: Mock; token: Mock }
+    let socketEvents: Subject<unknown>
 
     const press = (key: string, target: EventTarget = document.body) => {
         const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
@@ -47,13 +49,14 @@ describe('VideoStream', () => {
     beforeEach(async () => {
         emit = vi.fn()
         connected = signal(true)
+        socketEvents = new Subject<unknown>()
         streamToken = { start: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), token: vi.fn().mockReturnValue('stream-token') }
         await TestBed.configureTestingModule({
             imports: [VideoStream],
             providers: [
                 provideHttpClient(),
                 provideHttpClientTesting(),
-                { provide: SocketService, useValue: { connected, emit } },
+                { provide: SocketService, useValue: { connected, emit, listen: () => socketEvents } },
                 { provide: StreamTokenService, useValue: streamToken },
             ],
         }).compileComponents()
@@ -388,6 +391,61 @@ describe('VideoStream', () => {
 
             expect(instances()[0].destroy).toHaveBeenCalled()
             expect(component.state()).toBe('off')
+        })
+    })
+
+    describe('stream restarts pushed by the Raspberry', () => {
+        beforeEach(() => vi.useFakeTimers())
+        afterEach(() => vi.useRealTimers())
+
+        it('reconnects when the Raspberry says the stream restarts, whoever changed the settings', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            socketEvents.next({ reason: 'settings' })
+            expect(component.state()).toBe('connecting')
+            await vi.advanceTimersByTimeAsync(4000)
+
+            expect(cameraOn).toHaveBeenCalledTimes(1)
+        })
+
+        it('ignores the event while the camera is off', () => {
+            socketEvents.next({ reason: 'settings' })
+
+            expect(component.state()).toBe('off')
+        })
+
+        it('restarts by itself after its own change when the socket is down and would miss the event', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+            connected.set(false)
+
+            component.onSettingsApplied()
+            await vi.advanceTimersByTimeAsync(4000)
+
+            expect(cameraOn).toHaveBeenCalledTimes(1)
+        })
+
+        it('leaves the restart to the socket event when the socket is up (no double reconnect)', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            component.onSettingsApplied()
+            await vi.advanceTimersByTimeAsync(10_000)
+
+            expect(cameraOn).not.toHaveBeenCalled()
+            expect(component.state()).toBe('live')
+        })
+
+        it('stops listening when the page is left', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            fixture.destroy()
+            socketEvents.next({ reason: 'settings' })
+            await vi.advanceTimersByTimeAsync(10_000)
+
+            expect(cameraOn).not.toHaveBeenCalled()
         })
     })
 

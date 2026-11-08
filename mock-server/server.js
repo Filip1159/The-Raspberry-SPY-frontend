@@ -273,6 +273,8 @@ app.put('/camera/settings', requireToken, (req, res) => {
     const error = validateCameraSettings(req.body)
     if (error) return res.status(400).json({ error })
     state.cameraSettings = req.body
+    // Like the real backend: the stream restarts, so every viewer has to reconnect
+    if (state.cameraApplied) io.emit('camera_stream_restart', { reason: 'settings' })
     res.json(cameraView())
 })
 

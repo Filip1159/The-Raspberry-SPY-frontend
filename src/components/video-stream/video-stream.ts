@@ -1,4 +1,5 @@
 import { Component, ElementRef, HostListener, inject, OnDestroy, signal, ViewChild, computed } from '@angular/core'
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { faAngleUp, faArrowsToCircle, faCamera, faExpand, faLightbulb, faVideo, faVideoSlash } from '@fortawesome/free-solid-svg-icons'
 import { SocketService } from '../../service/socket.service'
@@ -72,6 +73,19 @@ export class VideoStream implements OnDestroy {
     private hiddenTimer: ReturnType<typeof setTimeout> | null = null
     /** The stream was stopped because the tab was hidden, so it starts again when the tab is shown */
     private resumeWhenVisible = false
+
+    constructor() {
+        // The Raspberry restarts the stream after somebody (maybe in another tab or on another device) changed the camera settings
+        this.socket
+            .listen('camera_stream_restart')
+            .pipe(takeUntilDestroyed())
+            .subscribe(() => this.restartStream())
+    }
+
+    /** The settings were saved and applied by this page: the socket event restarts the stream, unless this page missed it */
+    onSettingsApplied(): void {
+        if (!this.socket.connected()) this.restartStream()
+    }
 
     async cameraOn() {
         this.resumeWhenVisible = false

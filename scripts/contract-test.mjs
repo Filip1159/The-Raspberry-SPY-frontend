@@ -282,7 +282,7 @@ try {
         for (const key of ['hFlip', 'vFlip']) assert(typeof settings[key] === 'boolean', `settings.${key} must be a boolean`)
         for (const key of ['resolution', 'exposure', 'awb']) assert(typeof settings[key] === 'string', `settings.${key} must be a string`)
 
-        // the real backend allows 10 changes per minute, this test makes 9 (rejected ones count)
+        // the real backend allows 10 changes per minute, the checks of this file make 10 (rejected ones count)
         for (const bad of [
             [],
             { ...settings, fps: 99 },
@@ -305,6 +305,21 @@ try {
             'the change must be returned afterwards'
         )
         assert((await call('/camera/settings', { token, method: 'PUT', json: settings })).status === 200, 'restoring must answer 200')
+    })
+
+    await check('an applied PUT /camera/settings pushes camera_stream_restart to the connected clients', async () => {
+        const current = (await (await call('/camera/settings', { token })).json()).settings
+        const { socket, error } = await connectSocket(token)
+        try {
+            assert(!error, `connect_error: ${error}`)
+            const restart = nextEvent(socket, 'camera_stream_restart')
+            const saved = await call('/camera/settings', { token, method: 'PUT', json: current })
+            assert(saved.status === 200, `status ${saved.status}`)
+            const event = await restart
+            assert(typeof event.reason === 'string', 'the event needs a "reason" string')
+        } finally {
+            socket.close()
+        }
     })
 
     await check('Socket.IO refuses a missing or forged token with "unauthorized"', async () => {
