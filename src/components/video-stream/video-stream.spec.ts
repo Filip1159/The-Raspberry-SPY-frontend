@@ -6,6 +6,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { BackendStatusService } from '../../service/backend-status.service'
 import { ToastService } from '../../service/toast.service'
 import { SocketService } from '../../service/socket.service'
+import { StreamTokenService } from '../../service/stream-token.service'
 import { VideoStream } from './video-stream'
 
 // hls.js needs MediaSource, which jsdom does not have: a stand-in that records what the page asks of it
@@ -35,6 +36,7 @@ describe('VideoStream', () => {
     let fixture: ComponentFixture<VideoStream>
     let emit: Mock
     let connected: ReturnType<typeof signal<boolean>>
+    let streamToken: { start: Mock; stop: Mock; token: Mock }
 
     const press = (key: string, target: EventTarget = document.body) => {
         const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
@@ -45,9 +47,15 @@ describe('VideoStream', () => {
     beforeEach(async () => {
         emit = vi.fn()
         connected = signal(true)
+        streamToken = { start: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), token: vi.fn().mockReturnValue('stream-token') }
         await TestBed.configureTestingModule({
             imports: [VideoStream],
-            providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SocketService, useValue: { connected, emit } }],
+            providers: [
+                provideHttpClient(),
+                provideHttpClientTesting(),
+                { provide: SocketService, useValue: { connected, emit } },
+                { provide: StreamTokenService, useValue: streamToken },
+            ],
         }).compileComponents()
 
         fixture = TestBed.createComponent(VideoStream)
@@ -287,7 +295,7 @@ describe('VideoStream', () => {
         it('plays the playlist natively with the token where hls.js cannot run', async () => {
             await component.cameraOn()
 
-            expect(video().src).toMatch(/\/cam1\/index\.m3u8\?jwt=/)
+            expect(video().src).toMatch(/\/cam1\/index\.m3u8\?jwt=stream-token$/)
             expect(instances()).toHaveLength(0)
         })
 
@@ -299,6 +307,31 @@ describe('VideoStream', () => {
             expect(instances()).toHaveLength(1)
             expect(instances()[0].loadSource).toHaveBeenCalledWith(expect.stringMatching(/\/cam1\/index\.m3u8/))
             expect(video().getAttribute('src')).toBeNull()
+        })
+
+        it('uses the stream token for the video, never the login token', async () => {
+            hlsMock.state.supported = true
+            await component.cameraOn()
+
+            expect(streamToken.start).toHaveBeenCalledTimes(1)
+            expect(instances()[0].loadSource).toHaveBeenCalledWith(expect.stringMatching(/\/cam1\/index\.m3u8\?jwt=stream-token$/))
+        })
+
+        it('shows the error state when no stream token can be fetched', async () => {
+            streamToken.start.mockRejectedValue(new Error('offline'))
+
+            await component.cameraOn()
+
+            expect(component.state()).toBe('error')
+            expect(instances()).toHaveLength(0)
+        })
+
+        it('stops renewing the stream token when the camera is turned off', async () => {
+            await component.cameraOn()
+
+            component.cameraOff()
+
+            expect(streamToken.stop).toHaveBeenCalled()
         })
 
         it('falls back to the native player when hls.js fails before the first frame', async () => {
@@ -332,12 +365,26 @@ describe('VideoStream', () => {
             expect(instances()[1].destroy).toHaveBeenCalledTimes(1)
         })
 
-        it('drops a start that was overtaken while hls.js was loading', async () => {
+        it('drops a start that was overtaken while the stream token was fetched', async () => {
             hlsMock.state.supported = true
 
             const start = component.cameraOn()
             component.cameraOff()
             await start
+
+            expect(instances()).toHaveLength(0)
+            expect(component.state()).toBe('off')
+        })
+
+        it('destroys a player that was overtaken while hls.js was starting', async () => {
+            hlsMock.state.supported = true
+            // the first token() call happens inside the player, right after hls.js was created
+            streamToken.token.mockImplementationOnce(() => {
+                component.cameraOff()
+                return 'stream-token'
+            })
+
+            await component.cameraOn()
 
             expect(instances()[0].destroy).toHaveBeenCalled()
             expect(component.state()).toBe('off')

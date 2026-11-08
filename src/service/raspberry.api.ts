@@ -7,6 +7,12 @@ interface LoginResponse {
     access_token: string
 }
 
+interface StreamTokenResponse {
+    /** Only the video server accepts it, the API refuses it */
+    stream_token: string
+    expires_at: string
+}
+
 export interface Alarm {
     day: string
     hour: number
@@ -67,6 +73,11 @@ export class RaspberryApi {
     /** Revokes the refresh cookie on the server */
     logout(): Observable<void> {
         return this.http.post<void>(`${env.backendApiUrl}/logout`, {}, { withCredentials: true })
+    }
+
+    /** A short-lived token for the video URLs, so the login token never appears in them */
+    getStreamToken(): Observable<StreamTokenResponse> {
+        return this.http.post<StreamTokenResponse>(`${env.backendApiUrl}/stream-token`, {})
     }
 
     getAlarms(): Observable<Alarm[]> {

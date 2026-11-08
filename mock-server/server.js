@@ -2,7 +2,7 @@
  * Mock of the Raspberry backend, so the UI can be developed without the Raspberry: npm run start:mock
  *
  * Implements the same contract as The-Raspberry-SPY-backend (see AGENTS.md): /health, /login, /alarms, /alarms/play,
- * /refresh, /logout, /greetings, /stats/history, /camera/settings and Socket.IO (JWT handshake, 5 s stats broadcasts, 'message' control events).
+ * /refresh, /logout, /stream-token, /greetings, /stats/history, /camera/settings and Socket.IO (JWT handshake, 5 s stats broadcasts, 'message' control events).
  *
  * Failure simulation (for testing the offline/error states of the UI), e.g.
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"offline": true}'
@@ -102,12 +102,15 @@ const history = []
 
 const base64url = value => Buffer.from(value).toString('base64url')
 
-function signToken(subject) {
+// Like the real backend: a short-lived token that only the video server accepts (it goes into URLs); the API refuses it
+const STREAM_TOKEN_SECONDS = Number(process.env.MOCK_STREAM_TOKEN_SECONDS || 120)
+
+function signToken(subject, lifetimeSeconds = TOKEN_LIFETIME_SECONDS, extraClaims = {}) {
     const now = Math.floor(Date.now() / 1000)
     const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-    const payload = base64url(JSON.stringify({ sub: subject, iat: now, exp: now + TOKEN_LIFETIME_SECONDS }))
+    const payload = base64url(JSON.stringify({ sub: subject, iat: now, exp: now + lifetimeSeconds, ...extraClaims }))
     const signature = crypto.createHmac('sha256', secret).update(`${header}.${payload}`).digest('base64url')
-    return { token: `${header}.${payload}.${signature}`, exp: now + TOKEN_LIFETIME_SECONDS }
+    return { token: `${header}.${payload}.${signature}`, exp: now + lifetimeSeconds }
 }
 
 /** Returns the token claims, or null when the token is missing, forged or expired */
@@ -122,6 +125,7 @@ function verifyToken(token) {
 
     try {
         const claims = JSON.parse(Buffer.from(payload, 'base64url').toString())
+        if (claims.scope === 'stream') return null
         return claims.exp > Math.floor(Date.now() / 1000) ? claims : null
     } catch {
         return null
@@ -211,6 +215,11 @@ app.post('/refresh', (req, res) => {
     issueRefreshToken(res)
     const { token, exp } = signToken(USERNAME)
     res.json({ access_token: token, expires_at: new Date(exp * 1000).toISOString() })
+})
+
+app.post('/stream-token', requireToken, (_req, res) => {
+    const { token, exp } = signToken(USERNAME, STREAM_TOKEN_SECONDS, { scope: 'stream' })
+    res.json({ stream_token: token, expires_at: new Date(exp * 1000).toISOString() })
 })
 
 app.post('/logout', (req, res) => {

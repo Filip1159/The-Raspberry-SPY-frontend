@@ -6,7 +6,7 @@ import { LongPressButton } from './longpress-button/longpress-button'
 import { Slider } from './slider/slider'
 import { CameraSettingsCard } from './camera-settings/camera-settings'
 import { env } from './../../environment'
-import { AuthService } from '../../service/auth.service'
+import { StreamTokenService } from '../../service/stream-token.service'
 import { ToastService } from '../../service/toast.service'
 import { BACKEND_OFFLINE_MESSAGE, BackendStatusService } from '../../service/backend-status.service'
 import type { MockCamera } from './mock-camera'
@@ -38,7 +38,7 @@ export class VideoStream implements OnDestroy {
     @ViewChild('video', { static: false })
     private video!: ElementRef<HTMLVideoElement>
 
-    private auth = inject(AuthService)
+    private streamToken = inject(StreamTokenService)
     private socket = inject(SocketService)
     private toasts = inject(ToastService)
     backendStatus = inject(BackendStatusService)
@@ -91,13 +91,22 @@ export class VideoStream implements OnDestroy {
         }
 
         const playlist = `${env.hlsUrl}/cam1/index.m3u8`
-        const playNatively = () => (video.src = `${playlist}?jwt=${this.auth.token()}`)
+        try {
+            // a short-lived token that only the video server accepts: the URLs (and so the logs) never hold the login token
+            await this.streamToken.start()
+        } catch {
+            if (session === this.session) this.onVideoError()
+            return
+        }
+        if (session !== this.session) return
+
+        const playNatively = () => (video.src = `${playlist}?jwt=${this.streamToken.token()}`)
         try {
             const { playWithHls } = await import('./hls-player')
             const hls = await playWithHls({
                 video,
                 url: playlist,
-                token: () => this.auth.token(),
+                token: () => this.streamToken.token(),
                 onFallback: playNatively,
                 onFatalError: () => this.onVideoError(),
             })
@@ -124,6 +133,7 @@ export class VideoStream implements OnDestroy {
     cameraOff() {
         this.session++
         this.stopHls()
+        this.streamToken.stop()
         this.clearRestartTimer()
         const video = this.video.nativeElement
         video.onloadeddata = null
@@ -210,6 +220,7 @@ export class VideoStream implements OnDestroy {
 
     ngOnDestroy(): void {
         this.stopHls()
+        this.streamToken.stop()
         this.clearRestartTimer()
         this.mockCamera?.stop()
     }

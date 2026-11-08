@@ -165,11 +165,33 @@ try {
             ['GET', '/greetings'],
             ['GET', '/camera/settings'],
             ['PUT', '/camera/settings'],
+            ['POST', '/stream-token'],
         ]) {
             const response = await call(path, { method, json: method === 'POST' || method === 'PUT' ? [] : undefined })
             assert(response.status === 401, `${method} ${path}: status ${response.status}`)
             assert(typeof (await response.json()).msg === 'string', `${method} ${path}: body must have a "msg" string`)
         }
+    })
+
+    await check('POST /stream-token returns a short-lived token that the API refuses', async () => {
+        const response = await call('/stream-token', { token, method: 'POST', json: {} })
+        assert(response.status === 200, `status ${response.status}`)
+        const body = await response.json()
+        assert(/^[\w-]+\.[\w-]+\.[\w-]+$/.test(body.stream_token), 'stream_token must be a JWT')
+        assert(typeof body.expires_at === 'string', 'expires_at must be a string')
+        const claims = JSON.parse(Buffer.from(body.stream_token.split('.')[1], 'base64url').toString())
+        assert(claims.exp - claims.iat <= 300, `a stream token must be short-lived, this one lasts ${claims.exp - claims.iat} s`)
+        assert(claims.scope === 'stream', 'the token needs the claim scope = "stream"')
+        for (const [method, path] of [
+            ['GET', '/alarms'],
+            ['POST', '/stream-token'],
+        ]) {
+            const refused = await call(path, { token: body.stream_token, method, json: method === 'POST' ? {} : undefined })
+            assert(refused.status === 401, `${method} ${path} with a stream token: status ${refused.status}`)
+        }
+        const socket = await connectSocket(body.stream_token)
+        socket.socket.close()
+        assert(socket.error === 'unauthorized', 'the socket must refuse a stream token')
     })
 
     await check('GET /alarms lists one entry per day', async () => {

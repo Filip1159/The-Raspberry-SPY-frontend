@@ -51,6 +51,14 @@ describe('RaspberryApi', () => {
         expect(requests.some(r => r.request.headers.has('Authorization'))).toBe(false)
     })
 
+    it('asks for a stream token with the login token (the interceptor adds it)', () => {
+        api.getStreamToken().subscribe()
+
+        const request = httpMock.expectOne(`${env.backendApiUrl}/stream-token`)
+        expect(request.request.method).toBe('POST')
+        request.flush({ stream_token: 'a.b.c', expires_at: '2026-01-01T00:00:00Z' })
+    })
+
     it('reads and saves the camera settings', () => {
         const settings = {
             resolution: '1280x720',
