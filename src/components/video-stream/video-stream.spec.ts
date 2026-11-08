@@ -8,6 +8,28 @@ import { ToastService } from '../../service/toast.service'
 import { SocketService } from '../../service/socket.service'
 import { VideoStream } from './video-stream'
 
+// hls.js needs MediaSource, which jsdom does not have: a stand-in that records what the page asks of it
+const hlsMock = vi.hoisted(() => {
+    const state = { supported: false, instances: [] as InstanceType<typeof FakeHls>[], onError: undefined as unknown as (data: unknown) => void }
+    class FakeHls {
+        static Events = { ERROR: 'error', MANIFEST_PARSED: 'manifestParsed' }
+        static ErrorTypes = { MEDIA_ERROR: 'mediaError', NETWORK_ERROR: 'networkError' }
+        static isSupported = () => state.supported
+        loadSource = vi.fn()
+        attachMedia = vi.fn()
+        destroy = vi.fn()
+        recoverMediaError = vi.fn()
+        on = (event: string, handler: (event: string, data: unknown) => void) => {
+            if (event === 'error') state.onError = data => handler('error', data)
+        }
+        constructor() {
+            state.instances.push(this)
+        }
+    }
+    return { state, FakeHls }
+})
+vi.mock('hls.js', () => ({ default: hlsMock.FakeHls }))
+
 describe('VideoStream', () => {
     let component: VideoStream
     let fixture: ComponentFixture<VideoStream>
@@ -250,6 +272,75 @@ describe('VideoStream', () => {
             await vi.advanceTimersByTimeAsync(5000)
 
             expect(cameraOn).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('playback', () => {
+        const video = () => fixture.nativeElement.querySelector('video') as HTMLVideoElement
+        const instances = () => hlsMock.state.instances
+
+        beforeEach(() => {
+            hlsMock.state.supported = false
+            hlsMock.state.instances = []
+        })
+
+        it('plays the playlist natively with the token where hls.js cannot run', async () => {
+            await component.cameraOn()
+
+            expect(video().src).toMatch(/\/cam1\/index\.m3u8\?jwt=/)
+            expect(instances()).toHaveLength(0)
+        })
+
+        it('leaves the playback to hls.js where it can run', async () => {
+            hlsMock.state.supported = true
+
+            await component.cameraOn()
+
+            expect(instances()).toHaveLength(1)
+            expect(instances()[0].loadSource).toHaveBeenCalledWith(expect.stringMatching(/\/cam1\/index\.m3u8/))
+            expect(video().getAttribute('src')).toBeNull()
+        })
+
+        it('falls back to the native player when hls.js fails before the first frame', async () => {
+            hlsMock.state.supported = true
+            await component.cameraOn()
+
+            hlsMock.state.onError({ fatal: true, type: 'networkError' })
+
+            expect(instances()[0].destroy).toHaveBeenCalled()
+            expect(video().src).toMatch(/\/cam1\/index\.m3u8\?jwt=/)
+        })
+
+        it('shows the error state when a stream that was playing breaks', async () => {
+            hlsMock.state.supported = true
+            await component.cameraOn()
+            video().dispatchEvent(new Event('playing'))
+
+            hlsMock.state.onError({ fatal: true, type: 'networkError' })
+
+            expect(component.state()).toBe('error')
+        })
+
+        it('stops hls.js when the camera is started again or turned off', async () => {
+            hlsMock.state.supported = true
+
+            await component.cameraOn()
+            await component.cameraOn()
+            expect(instances()[0].destroy).toHaveBeenCalledTimes(1)
+
+            component.cameraOff()
+            expect(instances()[1].destroy).toHaveBeenCalledTimes(1)
+        })
+
+        it('drops a start that was overtaken while hls.js was loading', async () => {
+            hlsMock.state.supported = true
+
+            const start = component.cameraOn()
+            component.cameraOff()
+            await start
+
+            expect(instances()[0].destroy).toHaveBeenCalled()
+            expect(component.state()).toBe('off')
         })
     })
 })

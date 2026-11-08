@@ -10,6 +10,7 @@ import { AuthService } from '../../service/auth.service'
 import { ToastService } from '../../service/toast.service'
 import { BACKEND_OFFLINE_MESSAGE, BackendStatusService } from '../../service/backend-status.service'
 import type { MockCamera } from './mock-camera'
+import type { HlsPlayback } from './hls-player'
 
 export type CameraState = 'off' | 'connecting' | 'live' | 'error'
 
@@ -61,6 +62,9 @@ export class VideoStream implements OnDestroy {
     canControl = computed(() => this.socket.connected() && !this.backendStatus.isOffline())
 
     private mockCamera: MockCamera | null = null
+    private hls: HlsPlayback | null = null
+    /** Counts camera starts, so a slow hls.js import of an earlier start cannot take over a later one */
+    private session = 0
     private lastKeyMove = 0
     private restartTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -74,14 +78,35 @@ export class VideoStream implements OnDestroy {
         }
         video.onwaiting = () => this.buffering.set(this.state() === 'live')
 
+        const session = ++this.session
+        this.stopHls()
+
         if (env.mock) {
             // No HLS stream without a Raspberry: show a generated test pattern instead
             const { createMockCameraStream } = await import('./mock-camera')
             this.mockCamera?.stop()
             this.mockCamera = createMockCameraStream()
             video.srcObject = this.mockCamera.stream
-        } else {
-            video.src = `${env.hlsUrl}/cam1/index.m3u8?jwt=${this.auth.token()}`
+            return
+        }
+
+        const playlist = `${env.hlsUrl}/cam1/index.m3u8`
+        const playNatively = () => (video.src = `${playlist}?jwt=${this.auth.token()}`)
+        try {
+            const { playWithHls } = await import('./hls-player')
+            const hls = await playWithHls({
+                video,
+                url: playlist,
+                token: () => this.auth.token(),
+                onFallback: playNatively,
+                onFatalError: () => this.onVideoError(),
+            })
+            if (session !== this.session) return hls?.destroy()
+            if (hls) this.hls = hls
+            else playNatively()
+        } catch {
+            // the player chunk could not be loaded (offline, deployment in between): the browser's own player still works
+            if (session === this.session) playNatively()
         }
     }
 
@@ -97,6 +122,8 @@ export class VideoStream implements OnDestroy {
     }
 
     cameraOff() {
+        this.session++
+        this.stopHls()
         this.clearRestartTimer()
         const video = this.video.nativeElement
         video.onloadeddata = null
@@ -171,12 +198,18 @@ export class VideoStream implements OnDestroy {
         this.move(direction)
     }
 
+    private stopHls(): void {
+        this.hls?.destroy()
+        this.hls = null
+    }
+
     private clearRestartTimer(): void {
         if (this.restartTimer) clearTimeout(this.restartTimer)
         this.restartTimer = null
     }
 
     ngOnDestroy(): void {
+        this.stopHls()
         this.clearRestartTimer()
         this.mockCamera?.stop()
     }

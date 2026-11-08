@@ -9,7 +9,7 @@ Backend repo: `../The-Raspberry-SPY-backend` (Python/FastAPI). Planned work live
 - Angular 21, **standalone components, zoneless** (`provideZonelessChangeDetection`), signals, `inject()`. No NgModules, no zone.js.
 - **The production build pre-renders the public portfolio** (`outputMode: static` + `prerender` in the `production` configuration, `@angular/ssr`): `dist/raspberry-ui/browser/index.html` is the finished portfolio page, `index.csr.html` is the client-only shell used for `/login` and `/app/*`. Dev and mock builds are client-only. Hydration is enabled.
 - TypeScript strict (`strictTemplates`, `noPropertyAccessFromIndexSignature`), SCSS, FontAwesome icons.
-- `socket.io-client` (websocket transport only) for live data and camera controls; `HttpClient` for REST; plain `<video src>` for HLS (native browser playback, no hls.js).
+- `socket.io-client` (websocket transport only) for live data and camera controls; `HttpClient` for REST; HLS through **hls.js** (`video-stream/hls-player.ts`, a lazy chunk loaded when the camera is turned on: low-latency mode, live-edge sync, the current JWT added to every playlist/segment request). Safari and browsers without MSE use the plain `<video src>` instead, and so does the page when hls.js fails before the first frame.
 - Tests: Vitest specs (globals, jsdom) run through the `@angular/build:unit-test` builder (`runner: vitest`, `setupFiles: src/test-setup.ts` stubs `matchMedia`; coverage with v8). End-to-end: Playwright. Lint: angular-eslint + prettier via eslint (`ng lint`).
 
 ## Commands
@@ -83,7 +83,7 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 - `GET /health` (public) is the liveness probe used by `BackendStatusService`.
 - All REST goes through `env.backendApiUrl` = `<host>/api` (nginx strips `/api`; the old `/flask` alias still works on the Pi until it is removed).
 - Socket.IO on `env.websocketUrl` (`/socket.io`) requires a valid JWT in the handshake (`auth: { token }`); otherwise the server refuses with `unauthorized`. `SocketService` connects only while a token exists and logs out on `unauthorized`. Server pushes every 5 s: `system_stats_update` `{cpuUsage,cpuTemperature,ramUsage}` and `ble_update` `{humidity,temperature,voltage,lastUpdated,stale}` (`stale`: no reading yet or older than 5 min; the UI does not use it yet). Client sends event `message` with a direction name (`UP`, `DOWN_LEFT`, `CENTER`, …) or `LED<0-255>`.
-- HLS: `${env.hlsUrl}/cam1/index.m3u8?jwt=<token>` (MediaMTX validates the same JWT).
+- HLS: `${env.hlsUrl}/cam1/index.m3u8?jwt=<token>` (MediaMTX validates the same JWT). hls.js fetches it with XHR/fetch, so the video server must send CORS headers for the site (`hlsAllowOrigin` in `mediamtx.yml`); the native player did not need them.
 - Backend CORS only allows `https://filipwisniewski.pl` (+ `www`). For local dev against the Pi, set `EXTRA_ALLOWED_ORIGINS` on the backend.
 
 ## Mock backend (no Raspberry)
