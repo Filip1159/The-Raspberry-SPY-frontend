@@ -62,50 +62,59 @@
         </p>
     </section>
 
-    <section class="card stream__controls" aria-labelledby="controls-title">
-        <h2 id="controls-title" class="stream__controls__title">Camera controls</h2>
+    <div class="stream__side">
+        <section class="card stream__controls" aria-labelledby="controls-title">
+            <h2 id="controls-title" class="stream__controls__title">Camera controls</h2>
 
-        @if (!canControl()) {
-        <p class="notice" role="status">
-            {{ backendStatus.isOffline() ? offlineMessage : 'Reconnecting to the Raspberry... the controls are paused until the connection is back.'
-            }}
-        </p>
-        }
+            @if (!canControl()) {
+            <p class="notice" role="status">
+                @if (backendStatus.isOffline()) { {{ offlineMessage }} } @else { Reconnecting to the Raspberry... the controls are paused until the
+                connection is back. }
+            </p>
+            }
 
-        <div class="stream__pad" role="group" aria-label="Move the camera">
-            <longpress-button label="Move up and left" [disabled]="!canControl()" (press)="move('UP_LEFT')">
-                <fa-icon [icon]="faAngleUp" rotate="-45deg" size="2x" />
-            </longpress-button>
-            <longpress-button label="Move up" [disabled]="!canControl()" (press)="move('UP')">
-                <fa-icon [icon]="faAngleUp" size="2x" />
-            </longpress-button>
-            <longpress-button label="Move up and right" [disabled]="!canControl()" (press)="move('UP_RIGHT')">
-                <fa-icon [icon]="faAngleUp" rotate="45deg" size="2x" />
-            </longpress-button>
-            <longpress-button label="Move left" [disabled]="!canControl()" (press)="move('LEFT')">
-                <fa-icon [icon]="faAngleUp" rotate="-90deg" size="2x" />
-            </longpress-button>
-            <button class="button stream__center" type="button" aria-label="Center the camera" [disabled]="!canControl()" (click)="move('CENTER')">
-                <fa-icon [icon]="faArrowsToCircle" size="lg" />
-            </button>
-            <longpress-button label="Move right" [disabled]="!canControl()" (press)="move('RIGHT')">
-                <fa-icon [icon]="faAngleUp" rotate="90deg" size="2x" />
-            </longpress-button>
-            <longpress-button label="Move down and left" [disabled]="!canControl()" (press)="move('DOWN_LEFT')">
-                <fa-icon [icon]="faAngleUp" rotate="225deg" size="2x" />
-            </longpress-button>
-            <longpress-button label="Move down" [disabled]="!canControl()" (press)="move('DOWN')">
-                <fa-icon [icon]="faAngleUp" rotate="180deg" size="2x" />
-            </longpress-button>
-            <longpress-button label="Move down and right" [disabled]="!canControl()" (press)="move('DOWN_RIGHT')">
-                <fa-icon [icon]="faAngleUp" rotate="135deg" size="2x" />
-            </longpress-button>
-        </div>
-        <p class="stream__hint stream__hint--keys">Keyboard: arrow keys move the camera, <kbd>C</kbd> centers it.</p>
+            <div class="stream__pad" role="group" aria-label="Move the camera">
+                <longpress-button label="Move up and left" [disabled]="!canControl()" (press)="move('UP_LEFT')">
+                    <fa-icon [icon]="faAngleUp" rotate="-45deg" size="2x" />
+                </longpress-button>
+                <longpress-button label="Move up" [disabled]="!canControl()" (press)="move('UP')">
+                    <fa-icon [icon]="faAngleUp" size="2x" />
+                </longpress-button>
+                <longpress-button label="Move up and right" [disabled]="!canControl()" (press)="move('UP_RIGHT')">
+                    <fa-icon [icon]="faAngleUp" rotate="45deg" size="2x" />
+                </longpress-button>
+                <longpress-button label="Move left" [disabled]="!canControl()" (press)="move('LEFT')">
+                    <fa-icon [icon]="faAngleUp" rotate="-90deg" size="2x" />
+                </longpress-button>
+                <button
+                    class="button stream__center"
+                    type="button"
+                    aria-label="Center the camera"
+                    [disabled]="!canControl()"
+                    (click)="move('CENTER')">
+                    <fa-icon [icon]="faArrowsToCircle" size="lg" />
+                </button>
+                <longpress-button label="Move right" [disabled]="!canControl()" (press)="move('RIGHT')">
+                    <fa-icon [icon]="faAngleUp" rotate="90deg" size="2x" />
+                </longpress-button>
+                <longpress-button label="Move down and left" [disabled]="!canControl()" (press)="move('DOWN_LEFT')">
+                    <fa-icon [icon]="faAngleUp" rotate="225deg" size="2x" />
+                </longpress-button>
+                <longpress-button label="Move down" [disabled]="!canControl()" (press)="move('DOWN')">
+                    <fa-icon [icon]="faAngleUp" rotate="180deg" size="2x" />
+                </longpress-button>
+                <longpress-button label="Move down and right" [disabled]="!canControl()" (press)="move('DOWN_RIGHT')">
+                    <fa-icon [icon]="faAngleUp" rotate="135deg" size="2x" />
+                </longpress-button>
+            </div>
+            <p class="stream__hint stream__hint--keys">Keyboard: arrow keys move the camera, <kbd>C</kbd> centers it.</p>
 
-        <div class="stream__light">
-            <fa-icon [icon]="faLightbulb" />
-            <slider label="Light" [value]="brightness" [disabled]="!canControl()" (valueChange)="setBrightness($event)"></slider>
-        </div>
-    </section>
+            <div class="stream__light">
+                <fa-icon [icon]="faLightbulb" />
+                <slider label="Light" [value]="brightness" [disabled]="!canControl()" (valueChange)="setBrightness($event)"></slider>
+            </div>
+        </section>
+
+        <camera-settings (applied)="restartStream()" />
+    </div>
 </main>

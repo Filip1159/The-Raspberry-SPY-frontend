@@ -4,7 +4,7 @@
  *   npm run contract                                  # the mock server (starts it on :8089)
  *   npm run contract -- http://localhost:8080         # an already running backend, e.g. `python main.py --fake` (demo / demo)
  *
- * It changes the alarms and posts a greeting, so do not point it at the real Raspberry. The greeting rate limit of the real backend
+ * It changes the alarms and the camera settings (and restores them) and posts a greeting, so do not point it at the real Raspberry. The greeting rate limit of the real backend
  * is kept in memory: restart it before running the test a second time within a minute.
  */
 import { spawn } from 'node:child_process'
@@ -163,8 +163,10 @@ try {
             ['POST', '/alarms'],
             ['POST', '/alarms/play'],
             ['GET', '/greetings'],
+            ['GET', '/camera/settings'],
+            ['PUT', '/camera/settings'],
         ]) {
-            const response = await call(path, { method, json: method === 'POST' ? [] : undefined })
+            const response = await call(path, { method, json: method === 'POST' || method === 'PUT' ? [] : undefined })
             assert(response.status === 401, `${method} ${path}: status ${response.status}`)
             assert(typeof (await response.json()).msg === 'string', `${method} ${path}: body must have a "msg" string`)
         }
@@ -246,6 +248,41 @@ try {
             samples.every((sample, index) => index === 0 || sample.timestamp >= samples[index - 1].timestamp),
             'oldest first'
         )
+    })
+
+    await check('GET/PUT /camera/settings validate (400 {error}) and store the stream settings', async () => {
+        const response = await call('/camera/settings', { token })
+        assert(response.status === 200, `status ${response.status}`)
+        const { settings, defaults, applied } = await response.json()
+        assert(settings && defaults && typeof applied === 'boolean', 'expected {settings, defaults, applied}')
+        for (const key of ['fps', 'bitrate', 'brightness', 'contrast', 'saturation', 'sharpness'])
+            assert(typeof settings[key] === 'number', `settings.${key} must be a number`)
+        for (const key of ['hFlip', 'vFlip']) assert(typeof settings[key] === 'boolean', `settings.${key} must be a boolean`)
+        for (const key of ['resolution', 'exposure', 'awb']) assert(typeof settings[key] === 'string', `settings.${key} must be a string`)
+
+        // the real backend allows 10 changes per minute, this test makes 9 (rejected ones count)
+        for (const bad of [
+            [],
+            { ...settings, fps: 99 },
+            { ...settings, resolution: '7680x4320' },
+            { ...settings, bitrate: 1000.5 },
+            { ...settings, hFlip: 'yes' },
+            { ...settings, awb: 'custom' },
+            { fps: 20 },
+        ]) {
+            const refused = await call('/camera/settings', { token, method: 'PUT', json: bad })
+            assert(refused.status === 400, `${JSON.stringify(bad)}: status ${refused.status}`)
+            assert(typeof (await refused.json()).error === 'string', 'body must have an "error" string')
+        }
+        const changed = { ...settings, fps: settings.fps === 15 ? 20 : 15, vFlip: !settings.vFlip }
+        const saved = await call('/camera/settings', { token, method: 'PUT', json: changed })
+        assert(saved.status === 200, `saving: status ${saved.status}`)
+        assert(JSON.stringify((await saved.json()).settings) === JSON.stringify(changed), 'the saved settings must be returned')
+        assert(
+            JSON.stringify((await (await call('/camera/settings', { token })).json()).settings) === JSON.stringify(changed),
+            'the change must be returned afterwards'
+        )
+        assert((await call('/camera/settings', { token, method: 'PUT', json: settings })).status === 200, 'restoring must answer 200')
     })
 
     await check('Socket.IO refuses a missing or forged token with "unauthorized"', async () => {

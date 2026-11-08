@@ -1,0 +1,62 @@
+<details class="card settings">
+    <summary class="settings__summary">Stream settings</summary>
+
+    <div class="settings__body">
+        @if (loading() && !draft()) {
+        <div class="skeleton settings__skeleton" role="status" aria-label="Loading the camera settings"></div>
+        } @else if (loadFailed()) {
+        <p class="notice notice--error" role="alert">{{ backendStatus.isOffline() ? offlineMessage : 'The camera settings could not be loaded.' }}</p>
+        <button class="button button--secondary" type="button" [disabled]="loading() || backendStatus.isOffline()" (click)="load()">Retry</button>
+        } @else if (draft(); as settings) {
+        <p class="settings__hint">Changing a setting restarts the stream for a few seconds.</p>
+        @if (!streamUpToDate()) {
+        <p class="notice" role="status">The saved settings are not in use yet: the camera service did not take them. The Raspberry keeps trying.</p>
+        }
+
+        <form class="settings__form" (submit)="$event.preventDefault(); save()">
+            @for (choice of choices; track choice.key) {
+            <div class="field">
+                <label class="field__label" [for]="'camera-' + choice.key">{{ choice.label }}</label>
+                <select class="field__input" [id]="'camera-' + choice.key" [disabled]="saving()" (change)="setChoice(choice.key, $event)">
+                    @for (option of choice.options; track option.value) {
+                    <option [value]="option.value" [selected]="option.value === settings[choice.key]">{{ option.label }}</option>
+                    }
+                </select>
+            </div>
+            } @for (field of rangeFields; track field.key) {
+            <div class="settings__range">
+                <label class="settings__range__label" [for]="'camera-' + field.key">{{ field.label }}</label>
+                <input
+                    class="settings__range__input"
+                    type="range"
+                    [id]="'camera-' + field.key"
+                    [min]="field.min"
+                    [max]="field.max"
+                    [step]="field.step"
+                    [value]="settings[field.key]"
+                    [disabled]="saving()"
+                    (input)="setNumber(field.key, $event)" />
+                <output class="settings__range__value" [for]="'camera-' + field.key">{{ field.format(settings[field.key]) }}</output>
+            </div>
+            }
+
+            <label class="settings__check">
+                <input type="checkbox" [checked]="settings.hFlip" [disabled]="saving()" (change)="setFlip('hFlip', $event)" /> Flip horizontally
+            </label>
+            <label class="settings__check">
+                <input type="checkbox" [checked]="settings.vFlip" [disabled]="saving()" (change)="setFlip('vFlip', $event)" /> Flip vertically
+            </label>
+
+            <div class="settings__actions">
+                <button class="button" type="submit" [disabled]="!dirty() || saving() || backendStatus.isOffline()">
+                    {{ saving() ? 'Applying...' : 'Apply' }}
+                </button>
+                <button class="button button--secondary" type="button" [disabled]="!dirty() || saving()" (click)="discard()">Discard</button>
+                <button class="button button--secondary" type="button" [disabled]="isDefault() || saving()" (click)="resetToDefaults()">
+                    Defaults
+                </button>
+            </div>
+        </form>
+        }
+    </div>
+</details>

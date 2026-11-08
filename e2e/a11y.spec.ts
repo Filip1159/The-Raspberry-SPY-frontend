@@ -36,6 +36,10 @@ for (const theme of ['light', 'dark'] as const) {
             await expect(page.getByRole('button', { name: 'Center the camera' })).toBeEnabled({ timeout: 15_000 })
             await expectNoViolations(page)
 
+            await page.getByText('Stream settings').click()
+            await expect(page.getByLabel('Frame rate')).toBeVisible()
+            await expectNoViolations(page)
+
             await page.goto('/app/alarm')
             await setTheme(page, theme)
             await expect(page.getByRole('article', { name: 'Alarm on Monday' })).toBeVisible()

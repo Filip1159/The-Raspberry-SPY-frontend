@@ -2,14 +2,15 @@
  * Mock of the Raspberry backend, so the UI can be developed without the Raspberry: npm run start:mock
  *
  * Implements the same contract as The-Raspberry-SPY-backend (see AGENTS.md): /health, /login, /alarms, /alarms/play,
- * /refresh, /logout, /greetings, /stats/history and Socket.IO (JWT handshake, 5 s stats broadcasts, 'message' control events).
+ * /refresh, /logout, /greetings, /stats/history, /camera/settings and Socket.IO (JWT handshake, 5 s stats broadcasts, 'message' control events).
  *
  * Failure simulation (for testing the offline/error states of the UI), e.g.
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"offline": true}'
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"latencyMs": 2000}'
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"failWith": 500}'   (429 shows the rate-limit messages)
  *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"offline": false, "latencyMs": 0, "failWith": null}'
- *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"reset": true}'   (restores the alarms and greetings)
+ *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"cameraApplied": false}'   (camera settings are saved but not applied)
+ *   curl -X POST localhost:8080/__mock/config -H 'content-type: application/json' -d '{"reset": true}'   (restores the alarms, greetings and camera settings)
  */
 const crypto = require('crypto')
 const http = require('http')
@@ -27,6 +28,50 @@ const STATS_INTERVAL_MS = Number(process.env.MOCK_STATS_INTERVAL_MS || 5000)
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 const MELODIES = ['Are you sleeping', 'Nokia', 'Old MacDonald', 'Panic', 'Pink panther', 'Pirates', 'Twinkle']
 
+// Same allowlist and ranges as app/camera_settings.py of the backend
+const CAMERA_DEFAULTS = {
+    resolution: '1280x720',
+    fps: 30,
+    bitrate: 4000,
+    hFlip: false,
+    vFlip: false,
+    brightness: 0,
+    contrast: 1,
+    saturation: 1,
+    sharpness: 1,
+    exposure: 'normal',
+    awb: 'auto',
+}
+const CAMERA_RESOLUTIONS = ['1920x1080', '1280x720', '854x480', '640x360']
+const CAMERA_EXPOSURES = ['normal', 'short', 'long']
+const CAMERA_AWB = ['auto', 'incandescent', 'tungsten', 'fluorescent', 'indoor', 'daylight', 'cloudy']
+const CAMERA_LIMITS = { fps: [5, 30], bitrate: [500, 10000], brightness: [-1, 1], contrast: [0, 4], saturation: [0, 4], sharpness: [0, 8] }
+const CAMERA_INTEGERS = ['fps', 'bitrate']
+const CAMERA_CHANGES_PER_MINUTE = 10
+
+/** The error message for invalid camera settings, or null */
+function validateCameraSettings(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return 'Body must be an object'
+    const keys = Object.keys(CAMERA_DEFAULTS)
+    if (Object.keys(data).length !== keys.length || !keys.every(key => key in data)) return `Expected exactly these settings: ${keys.join(', ')}`
+    if (!CAMERA_RESOLUTIONS.includes(data.resolution)) return `Invalid resolution (one of ${CAMERA_RESOLUTIONS.join(', ')})`
+    for (const key of ['hFlip', 'vFlip']) if (typeof data[key] !== 'boolean') return `Invalid ${key} value`
+    for (const [key, [low, high]] of Object.entries(CAMERA_LIMITS)) {
+        const value = data[key]
+        if (
+            typeof value !== 'number' ||
+            !Number.isFinite(value) ||
+            value < low ||
+            value > high ||
+            (CAMERA_INTEGERS.includes(key) && !Number.isInteger(value))
+        )
+            return `Invalid ${key} (between ${low} and ${high})`
+    }
+    if (!CAMERA_EXPOSURES.includes(data.exposure)) return `Invalid exposure (one of ${CAMERA_EXPOSURES.join(', ')})`
+    if (!CAMERA_AWB.includes(data.awb)) return `Invalid awb (one of ${CAMERA_AWB.join(', ')})`
+    return null
+}
+
 const secret = crypto.randomBytes(32)
 
 const REFRESH_COOKIE = 'refresh_token'
@@ -43,6 +88,10 @@ const state = {
     failWith: null,
     alarms: initialAlarms(),
     greetings: [],
+    cameraSettings: { ...CAMERA_DEFAULTS },
+    cameraChanges: [],
+    // `applied: false` in the answers, like a backend whose MediaMTX is not reachable
+    cameraApplied: true,
 }
 
 // Like the real backend: the latest samples of the 5 s broadcast, oldest first
@@ -106,12 +155,16 @@ app.use((req, _res, next) => {
 
 app.get('/__mock/config', (_req, res) => res.json(configView()))
 app.post('/__mock/config', (req, res) => {
-    const { offline, latencyMs, failWith, reset } = req.body ?? {}
-    // `reset: true` restores the alarms and greetings (data), not the failure simulation
+    const { offline, latencyMs, failWith, reset, cameraApplied } = req.body ?? {}
+    // `reset: true` restores the alarms, greetings and camera settings (data), not the failure simulation
     if (reset === true) {
         state.alarms = initialAlarms()
         state.greetings = []
+        state.cameraSettings = { ...CAMERA_DEFAULTS }
+        state.cameraChanges = []
+        state.cameraApplied = true
     }
+    if (typeof cameraApplied === 'boolean') state.cameraApplied = cameraApplied
     if (typeof offline === 'boolean') {
         state.offline = offline
         // Drop the connections abruptly, like a Raspberry that lost power (clients see a 'transport close')
@@ -195,6 +248,23 @@ app.post('/alarms/play', requireToken, (req, res) => {
     if (!MELODIES.includes(req.body?.melody)) return res.status(400).json({ error: 'Unknown melody' })
     console.log(`Playing melody "${req.body.melody}" (mock buzzer)`)
     res.status(204).end()
+})
+
+const cameraView = () => ({ settings: state.cameraSettings, defaults: CAMERA_DEFAULTS, applied: state.cameraApplied })
+
+app.get('/camera/settings', requireToken, (_req, res) => res.json(cameraView()))
+
+app.put('/camera/settings', requireToken, (req, res) => {
+    // Like the real backend: changes restart the stream, so they are limited (10 per minute)
+    const now = Date.now()
+    state.cameraChanges = state.cameraChanges.filter(time => now - time < 60_000)
+    if (state.cameraChanges.length >= CAMERA_CHANGES_PER_MINUTE) return res.status(429).json({ error: 'Too many requests, please try again later' })
+    state.cameraChanges.push(now)
+
+    const error = validateCameraSettings(req.body)
+    if (error) return res.status(400).json({ error })
+    state.cameraSettings = req.body
+    res.json(cameraView())
 })
 
 // Like the real backend: greetings can only be read by the owner

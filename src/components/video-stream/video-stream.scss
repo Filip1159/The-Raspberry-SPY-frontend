@@ -116,6 +116,12 @@
         }
     }
 
+    &__side {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
     &__controls {
         display: flex;
         flex-direction: column;

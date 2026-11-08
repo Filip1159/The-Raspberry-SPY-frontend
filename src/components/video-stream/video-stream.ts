@@ -4,6 +4,7 @@ import { faAngleUp, faArrowsToCircle, faCamera, faExpand, faLightbulb, faVideo, 
 import { SocketService } from '../../service/socket.service'
 import { LongPressButton } from './longpress-button/longpress-button'
 import { Slider } from './slider/slider'
+import { CameraSettingsCard } from './camera-settings/camera-settings'
 import { env } from './../../environment'
 import { AuthService } from '../../service/auth.service'
 import { ToastService } from '../../service/toast.service'
@@ -22,11 +23,13 @@ const KEY_DIRECTIONS: Record<string, string> = {
     C: 'CENTER',
 }
 const KEY_REPEAT_MS = 100
+// MediaMTX restarts the camera when its settings change: give it a moment before the player reconnects
+const STREAM_RESTART_MS = 4000
 
 @Component({
     selector: 'app-video-stream',
     standalone: true,
-    imports: [FontAwesomeModule, LongPressButton, Slider],
+    imports: [FontAwesomeModule, LongPressButton, Slider, CameraSettingsCard],
     templateUrl: './video-stream.html',
     styleUrl: './video-stream.scss',
 })
@@ -59,6 +62,7 @@ export class VideoStream implements OnDestroy {
 
     private mockCamera: MockCamera | null = null
     private lastKeyMove = 0
+    private restartTimer: ReturnType<typeof setTimeout> | null = null
 
     async cameraOn() {
         this.state.set('connecting')
@@ -81,7 +85,19 @@ export class VideoStream implements OnDestroy {
         }
     }
 
+    /** The camera settings changed on the Raspberry, so the running stream ends: show the player as connecting and reconnect */
+    restartStream(): void {
+        if (this.state() === 'off') return
+        this.state.set('connecting')
+        this.clearRestartTimer()
+        this.restartTimer = setTimeout(() => {
+            this.restartTimer = null
+            if (this.state() !== 'off') this.cameraOn()
+        }, STREAM_RESTART_MS)
+    }
+
     cameraOff() {
+        this.clearRestartTimer()
         const video = this.video.nativeElement
         video.onloadeddata = null
         video.onplaying = null
@@ -155,7 +171,13 @@ export class VideoStream implements OnDestroy {
         this.move(direction)
     }
 
+    private clearRestartTimer(): void {
+        if (this.restartTimer) clearTimeout(this.restartTimer)
+        this.restartTimer = null
+    }
+
     ngOnDestroy(): void {
+        this.clearRestartTimer()
         this.mockCamera?.stop()
     }
 }

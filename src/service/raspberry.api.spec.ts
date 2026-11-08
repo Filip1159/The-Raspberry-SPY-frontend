@@ -51,6 +51,32 @@ describe('RaspberryApi', () => {
         expect(requests.some(r => r.request.headers.has('Authorization'))).toBe(false)
     })
 
+    it('reads and saves the camera settings', () => {
+        const settings = {
+            resolution: '1280x720',
+            fps: 30,
+            bitrate: 4000,
+            hFlip: false,
+            vFlip: false,
+            brightness: 0,
+            contrast: 1,
+            saturation: 1,
+            sharpness: 1,
+            exposure: 'normal',
+            awb: 'auto',
+        }
+        api.getCameraSettings().subscribe()
+        const get = httpMock.expectOne(`${env.backendApiUrl}/camera/settings`)
+        expect(get.request.method).toBe('GET')
+        get.flush({ settings, defaults: settings, applied: true })
+
+        api.saveCameraSettings(settings).subscribe()
+        const put = httpMock.expectOne(`${env.backendApiUrl}/camera/settings`)
+        expect(put.request.method).toBe('PUT')
+        expect(put.request.body).toEqual(settings)
+        put.flush({ settings, defaults: settings, applied: true })
+    })
+
     it('sends greetings without a token', () => {
         api.sendGreeting('hi').subscribe()
 

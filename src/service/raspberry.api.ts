@@ -26,6 +26,30 @@ export interface StatsSample {
     timestamp: number
 }
 
+/** The parameters of the camera stream; the Raspberry restarts the stream for a few seconds when they change */
+export interface CameraSettings {
+    /** `<width>x<height>` */
+    resolution: string
+    fps: number
+    /** kbit/s */
+    bitrate: number
+    hFlip: boolean
+    vFlip: boolean
+    brightness: number
+    contrast: number
+    saturation: number
+    sharpness: number
+    exposure: string
+    awb: string
+}
+
+export interface CameraSettingsResponse {
+    settings: CameraSettings
+    defaults: CameraSettings
+    /** false while the camera service did not take the settings yet (the Raspberry keeps retrying) */
+    applied: boolean
+}
+
 @Injectable({ providedIn: 'root' })
 export class RaspberryApi {
     http = inject(HttpClient)
@@ -64,6 +88,14 @@ export class RaspberryApi {
     /** The latest stats samples (oldest first), so the charts survive a page reload */
     getStatsHistory(): Observable<StatsSample[]> {
         return this.http.get<StatsSample[]>(`${env.backendApiUrl}/stats/history`)
+    }
+
+    getCameraSettings(): Observable<CameraSettingsResponse> {
+        return this.http.get<CameraSettingsResponse>(`${env.backendApiUrl}/camera/settings`)
+    }
+
+    saveCameraSettings(settings: CameraSettings): Observable<CameraSettingsResponse> {
+        return this.http.put<CameraSettingsResponse>(`${env.backendApiUrl}/camera/settings`, settings)
     }
 
     sendGreeting(text: string): Observable<void> {

@@ -1,4 +1,4 @@
-import { expect, signIn, test } from './fixtures'
+import { expect, setMock, signIn, test } from './fixtures'
 
 test.beforeEach(async ({ page }) => {
     await signIn(page)
@@ -21,6 +21,39 @@ test('the stats charts are filled from the history the Raspberry remembers', asy
 
     // the mock also pushes a live reading right after connecting, hence more than the 3 remembered samples are fine
     await expect(page.getByRole('img', { name: /CPU usage in percent.*over the last [3-9] updates/i })).toBeVisible()
+})
+
+test('camera stream settings can be changed, applied and survive a reload', async ({ page }) => {
+    await page.getByText('Stream settings').click()
+    const resolution = page.getByLabel('Resolution')
+    await expect(resolution).toHaveValue('1280x720')
+    const apply = page.getByRole('button', { name: 'Apply' })
+    await expect(apply).toBeDisabled()
+
+    await resolution.selectOption('640x360')
+    await page.getByLabel('Frame rate').fill('15')
+    await page.getByLabel('Flip vertically').check()
+    await expect(page.getByText('15 fps')).toBeVisible()
+    await apply.click()
+    await expect(page.getByText('Camera settings applied')).toBeVisible()
+    await expect(apply).toBeDisabled()
+
+    await page.reload()
+    await page.getByText('Stream settings').click()
+    await expect(page.getByLabel('Resolution')).toHaveValue('640x360')
+    await expect(page.getByLabel('Frame rate')).toHaveValue('15')
+    await expect(page.getByLabel('Flip vertically')).toBeChecked()
+
+    await page.getByRole('button', { name: 'Defaults' }).click()
+    await expect(page.getByLabel('Resolution')).toHaveValue('1280x720')
+})
+
+test('camera settings that the camera service did not take yet are marked as such', async ({ page }) => {
+    await setMock({ cameraApplied: false })
+    await page.reload()
+    await page.getByText('Stream settings').click()
+
+    await expect(page.getByText('not in use yet')).toBeVisible()
 })
 
 test('alarms can be changed, saved and survive a reload', async ({ page }) => {

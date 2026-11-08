@@ -206,4 +206,50 @@ describe('VideoStream', () => {
 
         expect(emit).toHaveBeenCalledWith('message', 'LED128')
     })
+
+    describe('restartStream (the camera settings changed)', () => {
+        beforeEach(() => vi.useFakeTimers())
+        afterEach(() => vi.useRealTimers())
+
+        it('does nothing while the camera is off', () => {
+            component.restartStream()
+
+            expect(component.state()).toBe('off')
+        })
+
+        it('shows the player as connecting and reconnects after a moment', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            component.restartStream()
+            expect(component.state()).toBe('connecting')
+            expect(cameraOn).not.toHaveBeenCalled()
+
+            await vi.advanceTimersByTimeAsync(4000)
+            expect(cameraOn).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not reconnect when the camera was turned off meanwhile', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            component.restartStream()
+            component.cameraOff()
+            await vi.advanceTimersByTimeAsync(5000)
+
+            expect(cameraOn).not.toHaveBeenCalled()
+        })
+
+        it('reconnects only once when settings are applied twice in a row', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            component.restartStream()
+            await vi.advanceTimersByTimeAsync(2000)
+            component.restartStream()
+            await vi.advanceTimersByTimeAsync(5000)
+
+            expect(cameraOn).toHaveBeenCalledTimes(1)
+        })
+    })
 })
