@@ -47,6 +47,10 @@ export interface CameraSettings {
     sharpness: number
     exposure: string
     awb: string
+    /** `continuous` autofocus or `manual` (then `lensPosition` applies) */
+    afMode: string
+    /** Focus distance in dioptres (1 / metres): 0 is infinity, 1 is 1 m, 10 is 10 cm */
+    lensPosition: number
 }
 
 export interface CameraSettingsResponse {

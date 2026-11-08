@@ -61,6 +61,22 @@ test('applying camera settings restarts a running stream through the socket even
     await expect(page.getByText('LIVE', { exact: true })).toBeVisible({ timeout: 15_000 })
 })
 
+test('the focus distance can be set once the focus is manual', async ({ page }) => {
+    await page.getByText('Stream settings').click()
+    await expect(page.getByLabel('Focus distance')).toHaveCount(0)
+
+    await page.getByLabel('Focus', { exact: true }).selectOption('manual')
+    await page.getByLabel('Focus distance').fill('2')
+    await expect(page.getByText('0.50 m')).toBeVisible()
+    await page.getByRole('button', { name: 'Apply' }).click()
+    await expect(page.getByText('Camera settings applied')).toBeVisible()
+
+    await page.reload()
+    await page.getByText('Stream settings').click()
+    await expect(page.getByLabel('Focus', { exact: true })).toHaveValue('manual')
+    await expect(page.getByLabel('Focus distance')).toHaveValue('2')
+})
+
 test('camera settings that the camera service did not take yet are marked as such', async ({ page }) => {
     await setMock({ cameraApplied: false })
     await page.reload()

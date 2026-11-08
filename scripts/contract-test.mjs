@@ -277,18 +277,18 @@ try {
         assert(response.status === 200, `status ${response.status}`)
         const { settings, defaults, applied } = await response.json()
         assert(settings && defaults && typeof applied === 'boolean', 'expected {settings, defaults, applied}')
-        for (const key of ['fps', 'bitrate', 'brightness', 'contrast', 'saturation', 'sharpness'])
+        for (const key of ['fps', 'bitrate', 'brightness', 'contrast', 'saturation', 'sharpness', 'lensPosition'])
             assert(typeof settings[key] === 'number', `settings.${key} must be a number`)
         for (const key of ['hFlip', 'vFlip']) assert(typeof settings[key] === 'boolean', `settings.${key} must be a boolean`)
-        for (const key of ['resolution', 'exposure', 'awb']) assert(typeof settings[key] === 'string', `settings.${key} must be a string`)
+        for (const key of ['resolution', 'exposure', 'awb', 'afMode']) assert(typeof settings[key] === 'string', `settings.${key} must be a string`)
 
         // the real backend allows 10 changes per minute, the checks of this file make 10 (rejected ones count)
         for (const bad of [
             [],
             { ...settings, fps: 99 },
             { ...settings, resolution: '7680x4320' },
-            { ...settings, bitrate: 1000.5 },
-            { ...settings, hFlip: 'yes' },
+            { ...settings, lensPosition: 11 },
+            { ...settings, afMode: 'custom' },
             { ...settings, awb: 'custom' },
             { fps: 20 },
         ]) {

@@ -41,11 +41,22 @@ const CAMERA_DEFAULTS = {
     sharpness: 1,
     exposure: 'normal',
     awb: 'auto',
+    afMode: 'continuous',
+    lensPosition: 0,
 }
 const CAMERA_RESOLUTIONS = ['1920x1080', '1280x720', '854x480', '640x360']
 const CAMERA_EXPOSURES = ['normal', 'short', 'long']
+const CAMERA_AF_MODES = ['continuous', 'manual']
 const CAMERA_AWB = ['auto', 'incandescent', 'tungsten', 'fluorescent', 'indoor', 'daylight', 'cloudy']
-const CAMERA_LIMITS = { fps: [5, 30], bitrate: [500, 10000], brightness: [-1, 1], contrast: [0, 4], saturation: [0, 4], sharpness: [0, 8] }
+const CAMERA_LIMITS = {
+    fps: [5, 30],
+    bitrate: [500, 10000],
+    brightness: [-1, 1],
+    contrast: [0, 4],
+    saturation: [0, 4],
+    sharpness: [0, 8],
+    lensPosition: [0, 10],
+}
 const CAMERA_INTEGERS = ['fps', 'bitrate']
 const CAMERA_CHANGES_PER_MINUTE = 10
 
@@ -69,6 +80,7 @@ function validateCameraSettings(data) {
     }
     if (!CAMERA_EXPOSURES.includes(data.exposure)) return `Invalid exposure (one of ${CAMERA_EXPOSURES.join(', ')})`
     if (!CAMERA_AWB.includes(data.awb)) return `Invalid awb (one of ${CAMERA_AWB.join(', ')})`
+    if (!CAMERA_AF_MODES.includes(data.afMode)) return `Invalid afMode (one of ${CAMERA_AF_MODES.join(', ')})`
     return null
 }
 

@@ -4,8 +4,8 @@ import { BACKEND_OFFLINE_MESSAGE, BackendStatusService, isBackendUnreachable } f
 import { CameraSettings, RaspberryApi } from '../../../service/raspberry.api'
 import { ToastService } from '../../../service/toast.service'
 
-type NumberKey = 'fps' | 'bitrate' | 'brightness' | 'contrast' | 'saturation' | 'sharpness'
-type ChoiceKey = 'resolution' | 'exposure' | 'awb'
+type NumberKey = 'fps' | 'bitrate' | 'brightness' | 'contrast' | 'saturation' | 'sharpness' | 'lensPosition'
+type ChoiceKey = 'resolution' | 'exposure' | 'awb' | 'afMode'
 type FlipKey = 'hFlip' | 'vFlip'
 
 interface RangeField {
@@ -15,6 +15,8 @@ interface RangeField {
     max: number
     step: number
     format: (value: number) => string
+    /** Shown only for these settings (the focus distance needs the manual focus) */
+    visible?: (settings: CameraSettings) => boolean
 }
 
 interface Choice {
@@ -25,6 +27,15 @@ interface Choice {
 
 // The backend validates the same ranges (app/camera_settings.py) and answers 400 for anything else
 export const RANGE_FIELDS: RangeField[] = [
+    {
+        key: 'lensPosition',
+        label: 'Focus distance',
+        min: 0,
+        max: 10,
+        step: 0.1,
+        format: value => (value === 0 ? 'Infinity' : `${(1 / value).toFixed(value >= 2 ? 2 : 1)} m`),
+        visible: settings => settings.afMode === 'manual',
+    },
     { key: 'fps', label: 'Frame rate', min: 5, max: 30, step: 1, format: value => `${value} fps` },
     { key: 'bitrate', label: 'Bitrate', min: 500, max: 10000, step: 100, format: value => `${(value / 1000).toFixed(1)} Mbit/s` },
     { key: 'brightness', label: 'Brightness', min: -1, max: 1, step: 0.05, format: value => value.toFixed(2) },
@@ -51,6 +62,14 @@ export const CHOICES: Choice[] = [
             { value: 'normal', label: 'Normal' },
             { value: 'short', label: 'Short (less motion blur)' },
             { value: 'long', label: 'Long (better in the dark)' },
+        ],
+    },
+    {
+        key: 'afMode',
+        label: 'Focus',
+        options: [
+            { value: 'continuous', label: 'Continuous autofocus' },
+            { value: 'manual', label: 'Manual (fixed distance)' },
         ],
     },
     {

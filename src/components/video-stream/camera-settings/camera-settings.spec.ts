@@ -20,6 +20,8 @@ const DEFAULTS: CameraSettings = {
     sharpness: 1,
     exposure: 'normal',
     awb: 'auto',
+    afMode: 'continuous',
+    lensPosition: 0,
 }
 const URL = `${env.backendApiUrl}/camera/settings`
 
@@ -147,6 +149,45 @@ describe('CameraSettingsCard', () => {
         button('Apply').click()
         http.expectOne(URL).flush('', { status: 0, statusText: 'Unknown Error' })
         expect(toasts.error).toHaveBeenLastCalledWith(expect.stringContaining('switched off'))
+    })
+
+    describe('focus', () => {
+        const distance = () => el().querySelector('#camera-lensPosition') as HTMLInputElement | null
+
+        it('offers the focus distance only for the manual focus', () => {
+            loadWith()
+            expect((el().querySelector('#camera-afMode') as HTMLSelectElement).value).toBe('continuous')
+            expect(distance()).toBeNull()
+
+            change('#camera-afMode', 'manual', 'change')
+            expect(distance()).not.toBeNull()
+
+            change('#camera-afMode', 'continuous', 'change')
+            expect(distance()).toBeNull()
+        })
+
+        it('shows the distance in metres, and infinity at 0', () => {
+            loadWith({ ...DEFAULTS, afMode: 'manual', lensPosition: 0 })
+            expect(el().textContent).toContain('Infinity')
+
+            change('#camera-lensPosition', '2')
+            expect(el().textContent).toContain('0.50 m')
+
+            change('#camera-lensPosition', '0.5')
+            expect(el().textContent).toContain('2.0 m')
+        })
+
+        it('saves the focus mode and the distance', () => {
+            loadWith()
+            change('#camera-afMode', 'manual', 'change')
+            change('#camera-lensPosition', '3')
+
+            button('Apply').click()
+
+            const request = http.expectOne(URL)
+            expect(request.request.body).toEqual({ ...DEFAULTS, afMode: 'manual', lensPosition: 3 })
+            request.flush({ settings: request.request.body, defaults: DEFAULTS, applied: true })
+        })
     })
 
     it('"Defaults" fills the form with the defaults of the Raspberry without saving them', () => {

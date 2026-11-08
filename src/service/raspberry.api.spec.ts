@@ -72,6 +72,8 @@ describe('RaspberryApi', () => {
             sharpness: 1,
             exposure: 'normal',
             awb: 'auto',
+            afMode: 'continuous',
+            lensPosition: 0,
         }
         api.getCameraSettings().subscribe()
         const get = httpMock.expectOne(`${env.backendApiUrl}/camera/settings`)
