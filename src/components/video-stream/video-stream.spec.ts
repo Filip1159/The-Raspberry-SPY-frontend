@@ -390,4 +390,85 @@ describe('VideoStream', () => {
             expect(component.state()).toBe('off')
         })
     })
+
+    describe('hidden tab', () => {
+        const setHidden = (hidden: boolean) => {
+            Object.defineProperty(document, 'hidden', { value: hidden, configurable: true })
+            document.dispatchEvent(new Event('visibilitychange'))
+        }
+
+        beforeEach(() => vi.useFakeTimers())
+        afterEach(() => {
+            setHidden(false)
+            Object.defineProperty(document, 'pictureInPictureElement', { value: null, configurable: true })
+            vi.useRealTimers()
+        })
+
+        it('stops a playing stream after the tab was hidden for a while and starts it again when the tab is shown', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            setHidden(true)
+            await vi.advanceTimersByTimeAsync(29_000)
+            expect(component.state()).toBe('live')
+            await vi.advanceTimersByTimeAsync(2_000)
+            expect(component.state()).toBe('off')
+            expect(streamToken.stop).toHaveBeenCalled()
+
+            setHidden(false)
+            expect(cameraOn).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps the stream when the tab is back before the time is up', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            setHidden(true)
+            await vi.advanceTimersByTimeAsync(10_000)
+            setHidden(false)
+            await vi.advanceTimersByTimeAsync(60_000)
+
+            expect(component.state()).toBe('live')
+            expect(cameraOn).not.toHaveBeenCalled()
+        })
+
+        it('does not start a camera that the viewer turned off', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+
+            setHidden(true)
+            await vi.advanceTimersByTimeAsync(60_000)
+            setHidden(false)
+
+            expect(component.state()).toBe('off')
+            expect(cameraOn).not.toHaveBeenCalled()
+        })
+
+        it('does not start the camera after the viewer turned it off while the tab was hidden', async () => {
+            const cameraOn = vi.spyOn(component, 'cameraOn').mockResolvedValue()
+            component.state.set('live')
+
+            setHidden(true)
+            await vi.advanceTimersByTimeAsync(31_000)
+            expect(component.state()).toBe('off')
+            // (e.g. started and stopped by hand from another window of the same page)
+            component.cameraOff()
+            setHidden(false)
+
+            expect(cameraOn).not.toHaveBeenCalled()
+        })
+
+        it('leaves a failed stream and picture-in-picture alone', async () => {
+            component.state.set('error')
+            setHidden(true)
+            await vi.advanceTimersByTimeAsync(60_000)
+            expect(component.state()).toBe('error')
+            setHidden(false)
+
+            component.state.set('live')
+            Object.defineProperty(document, 'pictureInPictureElement', { value: document.createElement('video'), configurable: true })
+            setHidden(true)
+            await vi.advanceTimersByTimeAsync(60_000)
+            expect(component.state()).toBe('live')
+        })
+    })
 })

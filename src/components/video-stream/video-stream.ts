@@ -26,6 +26,8 @@ const KEY_DIRECTIONS: Record<string, string> = {
 const KEY_REPEAT_MS = 100
 // MediaMTX restarts the camera when its settings change: give it a moment before the player reconnects
 const STREAM_RESTART_MS = 4000
+// A hidden tab keeps the (on-demand) camera running for nobody: stop after this long, so a quick look at another tab costs nothing
+const HIDDEN_STOP_MS = 30_000
 
 @Component({
     selector: 'app-video-stream',
@@ -67,8 +69,12 @@ export class VideoStream implements OnDestroy {
     private session = 0
     private lastKeyMove = 0
     private restartTimer: ReturnType<typeof setTimeout> | null = null
+    private hiddenTimer: ReturnType<typeof setTimeout> | null = null
+    /** The stream was stopped because the tab was hidden, so it starts again when the tab is shown */
+    private resumeWhenVisible = false
 
     async cameraOn() {
+        this.resumeWhenVisible = false
         this.state.set('connecting')
         const video = this.video.nativeElement
         video.onloadeddata = () => video.play().catch(() => undefined)
@@ -131,6 +137,8 @@ export class VideoStream implements OnDestroy {
     }
 
     cameraOff() {
+        this.resumeWhenVisible = false
+        this.clearHiddenTimer()
         this.session++
         this.stopHls()
         this.streamToken.stop()
@@ -192,6 +200,27 @@ export class VideoStream implements OnDestroy {
         this.socket.emit('message', `LED${value}`)
     }
 
+    @HostListener('document:visibilitychange')
+    onVisibilityChange(): void {
+        if (!document.hidden) {
+            this.clearHiddenTimer()
+            if (this.resumeWhenVisible) this.cameraOn()
+            return
+        }
+
+        const state = this.state()
+        if (state !== 'connecting' && state !== 'live') return
+        this.clearHiddenTimer()
+        this.hiddenTimer = setTimeout(() => {
+            this.hiddenTimer = null
+            const current = this.state()
+            // Picture-in-picture is watching even though the tab is hidden
+            if (!document.hidden || (current !== 'connecting' && current !== 'live') || document.pictureInPictureElement) return
+            this.cameraOff()
+            this.resumeWhenVisible = true
+        }, HIDDEN_STOP_MS)
+    }
+
     @HostListener('document:keydown', ['$event'])
     onKeyDown(event: KeyboardEvent): void {
         const direction = KEY_DIRECTIONS[event.key]
@@ -208,6 +237,11 @@ export class VideoStream implements OnDestroy {
         this.move(direction)
     }
 
+    private clearHiddenTimer(): void {
+        if (this.hiddenTimer) clearTimeout(this.hiddenTimer)
+        this.hiddenTimer = null
+    }
+
     private stopHls(): void {
         this.hls?.destroy()
         this.hls = null
@@ -219,6 +253,7 @@ export class VideoStream implements OnDestroy {
     }
 
     ngOnDestroy(): void {
+        this.clearHiddenTimer()
         this.stopHls()
         this.streamToken.stop()
         this.clearRestartTimer()
