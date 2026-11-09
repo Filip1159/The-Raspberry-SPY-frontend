@@ -40,6 +40,11 @@ for (const theme of ['light', 'dark'] as const) {
             await expect(page.getByLabel('Frame rate')).toBeVisible()
             await expectNoViolations(page)
 
+            // the pressed state of a preset has its own colors
+            await page.getByRole('button', { name: 'Night' }).click()
+            await expect(page.getByRole('button', { name: 'Night' })).toHaveAttribute('aria-pressed', 'true')
+            await expectNoViolations(page)
+
             await page.goto('/app/alarm')
             await setTheme(page, theme)
             await expect(page.getByRole('article', { name: 'Alarm on Monday' })).toBeVisible()

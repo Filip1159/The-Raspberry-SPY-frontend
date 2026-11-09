@@ -39,6 +39,23 @@
         gap: 14px;
     }
 
+    &__presets {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+
+        &__label {
+            font-weight: 700;
+        }
+
+        .button[aria-pressed='true'] {
+            color: var(--accent-soft-text);
+            background-color: var(--accent-soft);
+            border-color: var(--accent);
+        }
+    }
+
     &__range {
         display: grid;
         grid-template-columns: 1fr auto;

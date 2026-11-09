@@ -6,7 +6,7 @@ import { env } from '../../../environment'
 import { BackendStatusService } from '../../../service/backend-status.service'
 import { CameraSettings } from '../../../service/raspberry.api'
 import { ToastService } from '../../../service/toast.service'
-import { CameraSettingsCard } from './camera-settings'
+import { CameraSettingsCard, CHOICES, PRESETS, RANGE_FIELDS } from './camera-settings'
 
 const DEFAULTS: CameraSettings = {
     resolution: '1280x720',
@@ -24,6 +24,21 @@ const DEFAULTS: CameraSettings = {
     lensPosition: 0,
 }
 const URL = `${env.backendApiUrl}/camera/settings`
+
+describe('PRESETS', () => {
+    it('only use values the backend accepts', () => {
+        for (const { id, values } of PRESETS) {
+            for (const [key, value] of Object.entries(values)) {
+                const range = RANGE_FIELDS.find(field => field.key === key)
+                const choice = CHOICES.find(item => item.key === key)
+                const valid = range
+                    ? typeof value === 'number' && value >= range.min && value <= range.max
+                    : !!choice && choice.options.some(option => option.value === value)
+                expect(valid, `${id}: ${key} = ${value}`).toBe(true)
+            }
+        }
+    })
+})
 
 describe('CameraSettingsCard', () => {
     let component: CameraSettingsCard
@@ -149,6 +164,55 @@ describe('CameraSettingsCard', () => {
         button('Apply').click()
         http.expectOne(URL).flush('', { status: 0, statusText: 'Unknown Error' })
         expect(toasts.error).toHaveBeenLastCalledWith(expect.stringContaining('switched off'))
+    })
+
+    describe('presets', () => {
+        const preset = (label: string) => button(label)
+
+        it('fill the form without saving anything', () => {
+            loadWith()
+
+            preset('Low bandwidth').click()
+            fixture.detectChanges()
+
+            expect(component.draft()).toEqual({ ...DEFAULTS, resolution: '854x480', fps: 15, bitrate: 1000 })
+            expect((el().querySelector('#camera-resolution') as HTMLSelectElement).value).toBe('854x480')
+            expect(button('Apply').disabled).toBe(false)
+            http.expectNone(URL)
+        })
+
+        it('keep the flips, focus and white balance of the form', () => {
+            loadWith({ ...DEFAULTS, hFlip: true, afMode: 'manual', lensPosition: 2, awb: 'daylight' })
+
+            preset('Night').click()
+
+            expect(component.draft()).toMatchObject({ hFlip: true, afMode: 'manual', lensPosition: 2, awb: 'daylight', exposure: 'long', fps: 15 })
+        })
+
+        it('mark the preset the form matches, and none after a further change', () => {
+            loadWith()
+            expect(preset('Night').getAttribute('aria-pressed')).toBe('false')
+
+            preset('Night').click()
+            fixture.detectChanges()
+            expect(preset('Night').getAttribute('aria-pressed')).toBe('true')
+            expect(preset('Sharp').getAttribute('aria-pressed')).toBe('false')
+
+            change('#camera-fps', '20')
+            expect(preset('Night').getAttribute('aria-pressed')).toBe('false')
+        })
+
+        it('are saved like any other change', () => {
+            loadWith()
+            preset('Sharp').click()
+            fixture.detectChanges()
+
+            button('Apply').click()
+
+            const request = http.expectOne(URL)
+            expect(request.request.body).toEqual({ ...DEFAULTS, resolution: '1920x1080', fps: 24, bitrate: 8000, sharpness: 2 })
+            request.flush({ settings: request.request.body, defaults: DEFAULTS, applied: true })
+        })
     })
 
     describe('focus', () => {

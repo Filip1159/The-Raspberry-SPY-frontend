@@ -87,6 +87,36 @@ export const CHOICES: Choice[] = [
     },
 ]
 
+export interface Preset {
+    id: string
+    label: string
+    hint: string
+    /** Only these settings change; flips, focus and white balance stay as they are */
+    values: Partial<CameraSettings>
+}
+
+// Starting points, not measurements: they have to be valid for the backend (a spec checks the ranges)
+export const PRESETS: Preset[] = [
+    {
+        id: 'night',
+        label: 'Night',
+        hint: 'Long exposure at a lower frame rate, a little brighter',
+        values: { exposure: 'long', fps: 15, bitrate: 3000, brightness: 0.1, contrast: 1.1, saturation: 0.9 },
+    },
+    {
+        id: 'low-bandwidth',
+        label: 'Low bandwidth',
+        hint: '480p, 15 fps, 1 Mbit/s',
+        values: { resolution: '854x480', fps: 15, bitrate: 1000 },
+    },
+    {
+        id: 'sharp',
+        label: 'Sharp',
+        hint: 'Full HD, 24 fps, 8 Mbit/s and extra sharpening (more load on the Raspberry)',
+        values: { resolution: '1920x1080', fps: 24, bitrate: 8000, sharpness: 2 },
+    },
+]
+
 @Component({
     selector: 'camera-settings',
     standalone: true,
@@ -101,6 +131,7 @@ export class CameraSettingsCard {
     /** The camera service took new settings, so the stream restarts and the viewer should reconnect */
     applied = output<void>()
 
+    presets = PRESETS
     rangeFields = RANGE_FIELDS
     choices = CHOICES
     offlineMessage = BACKEND_OFFLINE_MESSAGE
@@ -118,6 +149,13 @@ export class CameraSettingsCard {
 
     dirty = computed(() => JSON.stringify(this.draft()) !== JSON.stringify(this.saved()))
     isDefault = computed(() => JSON.stringify(this.draft()) === JSON.stringify(this.defaults()))
+    /** The preset whose values the form shows right now */
+    activePreset = computed(() => {
+        const draft = this.draft()
+        if (!draft) return null
+        const match = this.presets.find(preset => Object.entries(preset.values).every(([key, value]) => draft[key as keyof CameraSettings] === value))
+        return match?.id ?? null
+    })
 
     constructor() {
         this.load()
@@ -155,6 +193,10 @@ export class CameraSettingsCard {
 
     setFlip(key: FlipKey, event: Event): void {
         this.update(key, (event.target as HTMLInputElement).checked)
+    }
+
+    applyPreset(preset: Preset): void {
+        this.draft.update(draft => (draft ? { ...draft, ...preset.values } : draft))
     }
 
     resetToDefaults(): void {

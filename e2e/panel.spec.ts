@@ -61,6 +61,23 @@ test('applying camera settings restarts a running stream through the socket even
     await expect(page.getByText('LIVE', { exact: true })).toBeVisible({ timeout: 15_000 })
 })
 
+test('a preset fills the form and is saved with Apply', async ({ page }) => {
+    await page.getByText('Stream settings').click()
+    const night = page.getByRole('button', { name: 'Night' })
+    await expect(night).toHaveAttribute('aria-pressed', 'false')
+
+    await night.click()
+    await expect(night).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByLabel('Exposure')).toHaveValue('long')
+    await expect(page.getByLabel('Frame rate')).toHaveValue('15')
+
+    await page.getByRole('button', { name: 'Apply' }).click()
+    await expect(page.getByText('Camera settings applied')).toBeVisible()
+    await page.reload()
+    await page.getByText('Stream settings').click()
+    await expect(page.getByRole('button', { name: 'Night' })).toHaveAttribute('aria-pressed', 'true')
+})
+
 test('the focus distance can be set once the focus is manual', async ({ page }) => {
     await page.getByText('Stream settings').click()
     await expect(page.getByLabel('Focus distance')).toHaveCount(0)

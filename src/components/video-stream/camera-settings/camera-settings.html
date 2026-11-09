@@ -14,6 +14,21 @@
         }
 
         <form class="settings__form" (submit)="$event.preventDefault(); save()">
+            <div class="settings__presets" role="group" aria-labelledby="camera-presets-label">
+                <span id="camera-presets-label" class="settings__presets__label">Presets</span>
+                @for (preset of presets; track preset.id) {
+                <button
+                    class="button button--secondary button--small"
+                    type="button"
+                    [attr.aria-pressed]="activePreset() === preset.id"
+                    [title]="preset.hint"
+                    [disabled]="saving()"
+                    (click)="applyPreset(preset)">
+                    {{ preset.label }}
+                </button>
+                }
+            </div>
+
             @for (choice of choices; track choice.key) {
             <div class="field">
                 <label class="field__label" [for]="'camera-' + choice.key">{{ choice.label }}</label>
