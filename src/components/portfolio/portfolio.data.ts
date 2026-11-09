@@ -65,7 +65,6 @@ export const SKILL_GROUPS: SkillGroup[] = [
             'ESP32',
             'STM32',
             'Python',
-            'Flask',
             'FastAPI',
             'PyTorch',
             'Angular',
