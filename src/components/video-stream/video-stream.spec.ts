@@ -235,6 +235,71 @@ describe('VideoStream', () => {
         Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true })
     })
 
+    describe('fullscreen on phones', () => {
+        const frame = () => fixture.nativeElement.querySelector('video').parentElement as HTMLElement
+        let lock: Mock
+        let unlock: Mock
+
+        const touchScreen = (coarse: boolean) =>
+            vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: coarse && query === '(pointer: coarse)' }) as MediaQueryList)
+
+        beforeEach(() => {
+            lock = vi.fn().mockResolvedValue(undefined)
+            unlock = vi.fn()
+            Object.defineProperty(screen, 'orientation', { value: { lock, unlock }, configurable: true })
+            frame().requestFullscreen = vi.fn().mockResolvedValue(undefined)
+        })
+
+        afterEach(() => {
+            vi.restoreAllMocks()
+            Object.defineProperty(screen, 'orientation', { value: undefined, configurable: true })
+        })
+
+        it('turns a touch screen to landscape while the frame is fullscreen', async () => {
+            touchScreen(true)
+
+            component.toggleFullscreen()
+            await Promise.resolve()
+
+            expect(lock).toHaveBeenCalledWith('landscape')
+        })
+
+        it('does not rotate a laptop window', async () => {
+            touchScreen(false)
+
+            component.toggleFullscreen()
+            await Promise.resolve()
+
+            expect(lock).not.toHaveBeenCalled()
+        })
+
+        it('gives the orientation back when fullscreen ends', () => {
+            document.dispatchEvent(new Event('fullscreenchange'))
+
+            expect(unlock).toHaveBeenCalled()
+        })
+
+        it('copes with browsers that refuse to lock the orientation', async () => {
+            touchScreen(true)
+            lock.mockRejectedValue(new Error('not supported'))
+
+            component.toggleFullscreen()
+            await new Promise(resolve => setTimeout(resolve))
+
+            expect(lock).toHaveBeenCalled()
+        })
+
+        it('uses the fullscreen of the video itself where an element cannot go fullscreen (iPhone)', () => {
+            ;(frame() as { requestFullscreen?: unknown }).requestFullscreen = undefined
+            const video = fixture.nativeElement.querySelector('video') as HTMLVideoElement & { webkitEnterFullscreen?: () => void }
+            video.webkitEnterFullscreen = vi.fn()
+
+            component.toggleFullscreen()
+
+            expect(video.webkitEnterFullscreen).toHaveBeenCalled()
+        })
+    })
+
     it('sends the light brightness', () => {
         component.setBrightness(128)
 

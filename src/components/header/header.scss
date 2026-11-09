@@ -112,4 +112,25 @@
             padding: 8px 12px;
         }
     }
+
+    // A phone held sideways has little height: a slim bar
+    @media (orientation: landscape) and (max-height: 520px) {
+        &__banner {
+            gap: 12px;
+            padding: 4px 12px;
+
+            &__img {
+                height: 32px;
+            }
+        }
+
+        &__tabs__tab {
+            padding: 0 14px 6px;
+            border-bottom-width: 4px;
+        }
+
+        &__icons {
+            padding: 4px 12px;
+        }
+    }
 }

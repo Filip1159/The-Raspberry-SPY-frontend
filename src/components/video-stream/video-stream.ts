@@ -204,11 +204,40 @@ export class VideoStream implements OnDestroy {
         }
     }
 
-    /** Fullscreen of the frame (not the bare video), so the overlays stay visible */
+    /**
+     * Fullscreen of the frame (not the bare video), so the overlays stay visible. On a phone the picture is wide, so the screen is
+     * turned to landscape while it is fullscreen. iPhones cannot fullscreen an element, only the video itself.
+     */
     toggleFullscreen(): void {
-        const frame = this.video.nativeElement.parentElement
-        if (document.fullscreenElement) document.exitFullscreen()
-        else frame?.requestFullscreen?.()
+        const video = this.video.nativeElement
+        const frame = video.parentElement
+        if (document.fullscreenElement) {
+            document.exitFullscreen()
+        } else if (frame?.requestFullscreen) {
+            frame.requestFullscreen().then(
+                () => this.lockLandscape(),
+                () => undefined
+            )
+        } else {
+            ;(video as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen?.()
+        }
+    }
+
+    @HostListener('document:fullscreenchange')
+    onFullscreenChange(): void {
+        if (!document.fullscreenElement) this.orientation()?.unlock?.()
+    }
+
+    private orientation(): (ScreenOrientation & { lock?: (orientation: string) => Promise<void> }) | undefined {
+        return typeof screen === 'undefined' ? undefined : screen.orientation
+    }
+
+    /** Only touch devices (a laptop window should not be rotated); browsers that cannot lock refuse, which is fine */
+    private lockLandscape(): void {
+        if (!window.matchMedia('(pointer: coarse)').matches) return
+        this.orientation()
+            ?.lock?.('landscape')
+            ?.catch(() => undefined)
     }
 
     move(msg: string): void {
