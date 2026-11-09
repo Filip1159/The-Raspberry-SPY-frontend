@@ -36,6 +36,7 @@ describe('Portfolio', () => {
             'skills',
             'projects',
             'beyond-code',
+            'location',
             'contact',
         ])
     })
