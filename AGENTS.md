@@ -2,7 +2,7 @@
 
 Angular SPA: Filip's **portfolio** (public, `/`) plus the control panel of a home-built Raspberry Pi 5 camera/alarm system (signed-in area, `/app/*`). Hosted on **GitHub Pages** at `https://filipwisniewski.pl`. The backend runs on the Raspberry at home and is exposed through a **Cloudflare Tunnel** at `https://api.filipwisniewski.pl`. When the Pi is off, the backend is unreachable – that is a normal state, not a bug.
 
-Backend repo: `../The-Raspberry-SPY-backend` (Python/FastAPI). Planned work lives in `BACKLOG.md` (covers both repos).
+Backend repo: `../The-Raspberry-SPY-backend` (Python/FastAPI).
 
 ## Stack
 
@@ -19,13 +19,14 @@ npm ci
 npm start          # ng serve on localhost:4200 against the Pi at the LAN IP in src/environment.ts (edit it if the Pi's address changes; start the backend with EXTRA_ALLOWED_ORIGINS=http://localhost:4200; add `-- --host 0.0.0.0` to serve the UI on the LAN)
 npm run start:mock # no Raspberry needed: mock backend (mock-server/, :8080) + ng serve --configuration mock (:4200). Login demo / demo
 npm run start:ui   # only the UI in the mock configuration, e.g. against the real backend started with `python main.py --fake`
-npm run build      # production build + pre-rendering -> dist/The-Raspberry-SPY-frontend/browser (index.html = portfolio, index.csr.html = SPA shell, copied to 404.html by deploy.yml)
+npm run build      # production build + pre-rendering -> dist/The-Raspberry-SPY-frontend/browser (index.html = portfolio, index.csr.html = SPA shell, copied to 404.html by ci.yml)
 npm run lint       # must pass, CI fails otherwise
 npm run format     # prettier --write .
 npm test           # unit tests in watch mode
 npm run test:ci    # what CI runs: once, with a coverage summary (coverage/ has the HTML report)
 npm run e2e        # Playwright end-to-end tests (starts mock-server + `ng serve --configuration mock` itself, reuses them when running; first time: `npx playwright install chromium`)
 npm run contract   # contract checks (REST + socket) against the mock server; `-- http://localhost:8080` targets a backend started with `python main.py --fake` (restart it between runs: greeting rate limit)
+npm run stats       # rewrites portfolio/profile-stats.ts with the current chess.com rating and Duolingo streak (CI runs it before every build)
 npm run check:build # sanity check of dist/ after `npm run build` (pre-rendered portfolio, CNAME, robots, sitemap, ...)
 ```
 
@@ -51,7 +52,7 @@ src/
   environment.mock.ts     # mock configuration: http://localhost:8080 (mock-server or the backend in fake mode), `mock: true`
   components/
     root/                 # <router-outlet/> + <toasts/>
-    portfolio/            # public landing page: portfolio.ts/html/scss, portfolio.data.ts (ALL copy: skills, projects, links), raspberry-spy-section/ (status badge + gallery + embedded greeting form)
+    portfolio/            # public landing page: portfolio.ts/html/scss, portfolio.data.ts (ALL copy: skills, projects, links), project-gallery/ (swipeable image strip of a project card, images in public/img/projects/), profile-stats.ts (chess.com rating + Duolingo streak, written by scripts/fetch-profile-stats.mjs), raspberry-spy-section/ (status badge + gallery + embedded greeting form)
     shell/                # AppShell: layout of the signed-in area
     header/ (+ mobile/)   # the same light bar as the portfolio nav: "The Raspberry SPY by Filip Wiśniewski", tabs (Live stream, Alarm, Stats, Portfolio), theme toggle, sign out; compact on phones + bottom nav
     backend-status-banner/ # "Raspberry is probably switched off" bar (shell + login)
@@ -69,8 +70,10 @@ src/
     theme.service.ts      # light/dark choice (data-theme on <html>, stored in localStorage 'theme')
     toast.service.ts      # replaces alert(): success/error/warning/info messages
 mock-server/server.js      # Express + Socket.IO fake of the backend contract (health, login, alarms, greetings, stats, JWT handshake) + failure simulation
-public/                   # CNAME (custom domain – keep!), robots.txt, sitemap.xml, site.webmanifest, favicons/icons, raspberry-pi.svg, img/ (photos as jpg + webp, og-image.jpg for link previews)
-.github/workflows/        # ci.yml (lint+test on push/PR), deploy.yml (build + GitHub Pages on master)
+scripts/                  # check-build.mjs, contract-test.mjs, fetch-profile-stats.mjs
+docs/screenshots/         # UI screenshots used by README.md (taken against the mock backend)
+public/                   # CNAME (custom domain – keep!), robots.txt, sitemap.xml, site.webmanifest, favicon.svg ("FW") + favicon.ico/png, app icons (raspberry), raspberry-pi.svg, img/ (photos as jpg + webp, og-image.jpg for link previews)
+.github/workflows/        # ci.yml: verify + e2e on push/PR, GitHub Pages deploy on master (also on a daily schedule, which refreshes profile-stats)
 ```
 
 ## Backend contract (what the UI depends on)
@@ -100,7 +103,7 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 - Components are standalone with `templateUrl`/`styleUrl`. Files and classes are named after the thing, without a `.component` / `Component` suffix (`login.ts` with `class Login`, `alarm.ts` with `AlarmCard` because `Alarm` is the API model). Selectors are a mix of `app-*` and plain names; keep the one of the component you touch. Use signals for state, `inject()` instead of constructor DI.
 - BEM-style SCSS class names (`header__tabs__tab`); mobile support via `@media (max-width: 600px)`.
 - **Use the design tokens and shared classes** from `styles.scss` (`var(--accent)`, `var(--card)`, `.button`, `.card`, `.field`, `.notice`...) instead of hardcoded colors, so light and dark mode both work. Never use `alert()`: inject `ToastService`. Every interactive element needs an accessible name (visible label or `aria-label`), a visible focus state (global `:focus-visible`), and must work with the keyboard; verify new pages with axe in both themes.
-- Keep `public/CNAME` and the `404.html` copy step in `deploy.yml` (SPA deep-link fallback on Pages) intact.
+- Keep `public/CNAME` and the `404.html` copy step in `ci.yml` (SPA deep-link fallback on Pages) intact.
 - Commit messages: short imperative summary.
 
 ## Gotchas
@@ -108,12 +111,11 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 - Never point `environment.prod.ts` at `http://` URLs – the site is HTTPS, browsers block mixed content.
 - The Pages site is static; there is no server to hide secrets. Nothing secret belongs in this repo.
 - The socket is created with `autoConnect: false` and connects/disconnects reactively with the `AuthService.token` signal. Components must not assume it is connected (`emit` is a no-op while disconnected). The header `Stats` only renders when logged in.
-- Several `alert()` calls are used for UX (session expiry, greetings). Prefer replacing them with in-page toasts when touching that code.
 - The Raspberry being off is a normal state. `BackendStatusService.status()` / `isOffline()` drive the global banner and disabled submit buttons; use `isBackendUnreachable(error)` and `BACKEND_OFFLINE_MESSAGE` in new error handlers instead of showing a generic failure. Do not inject `BackendStatusService` into code that runs while it is being constructed (its interceptor injects it lazily; `app.config.ts` triggers the first `check()` through an app initializer).
 - Project cards show a swipeable gallery (`portfolio/project-gallery`, CSS scroll snap + arrows + dots) when a project in `portfolio.data.ts` has `images`: webp files in `public/img/projects/` (900x600 max, taken from the GitHub repositories' screenshots and photos; photos are cropped 3:2, screenshots use `fit: 'contain'`).
 - The Chess.com and Duolingo cards show the rapid rating and the streak from `portfolio/profile-stats.ts`, which `npm run stats` (`scripts/fetch-profile-stats.mjs`) rewrites before every CI build; Duolingo has no CORS headers, so the numbers are baked into the pre-rendered page and `ci.yml` also runs daily (`schedule`) to refresh them. A failed request keeps the committed values.
 - Portfolio copy lives in `portfolio.data.ts` and `portfolio.html`; keep it factual (taken from the GitHub profile) and don't add claims about Filip that are not public. The portfolio must not require the backend: it only shows the status badge, which re-checks `/health` every 30 s.
-- Keep the first load small (Lighthouse mobile ~91): the public pages must not import `@fortawesome/angular-fontawesome` or `@angular/forms` eagerly. Use `<app-icon [icon]="faX">` (`components/icon`) there, keep `login` lazy and the greeting form inside `@defer`; `<fa-icon>` is fine inside the lazy `/app` area. Check with `npm run build` ("Initial total", currently ~342 kB raw / 98 kB transferred) and measure Lighthouse against a gzip-capable server (`npx serve dist/The-Raspberry-SPY-frontend/browser`), not `http-server`.
+- Keep the first load small (Lighthouse mobile ~91): the public pages must not import `@fortawesome/angular-fontawesome` or `@angular/forms` eagerly. Use `<app-icon [icon]="faX">` (`components/icon`) there, keep `login` lazy and the greeting form inside `@defer`; `<fa-icon>` is fine inside the lazy `/app` area. Check with `npm run build` ("Initial total", currently ~354 kB raw / 101 kB transferred) and measure Lighthouse against a gzip-capable server (`npx serve dist/The-Raspberry-SPY-frontend/browser`), not `http-server`.
 - The `SocketService` (socket.io-client) must stay out of the portfolio bundle: only inject it from components inside the lazy `/app` area.
 - **Code that runs during the pre-render must be server-safe**: no `localStorage`, `window` or `document` at construction time and no calls to the Raspberry. Use `isPlatformBrowser(inject(PLATFORM_ID))` or `afterNextRender()` (see `AuthService`, the app initializer in `app.config.ts`, `Portfolio`). State that differs per visitor (signed in or not) must be resolved in `afterNextRender`, otherwise hydration mismatches the pre-rendered HTML.
 - SEO basics live in three places: `src/index.html` (title, description, canonical, Open Graph/Twitter, JSON-LD, icons), `public/` (robots, sitemap, manifest, images) and `SeoService` (noindex). The domain `https://filipwisniewski.pl` is hardcoded in `index.html` and `sitemap.xml`. When adding a public route add it to `sitemap.xml`, `app.routes.server.ts` (`RenderMode.Prerender`) and give it a route `title`.
@@ -128,7 +130,7 @@ public/                   # CNAME (custom domain – keep!), robots.txt, sitemap
 
 ## Tests and CI
 
-- Specs live next to the code (`*.spec.ts`), 90+ of them: services (auth expiry timers, backend status, stats history, theme, toasts, SEO, API calls), guards, the route table (redirects, guards, noindex), and the main components (login, greetings, portfolio, stream page keyboard control, alarms unsaved-changes flow). Write a spec for new logic; use `HttpTestingController` for HTTP, `vi.useFakeTimers()` / `vi.advanceTimersByTime()` for timers, `vi.fn()` / `vi.spyOn()` for spies (import `vi` from `vitest`), and stub `SocketService` (`{ connected: signal(true), emit, listen }`) instead of opening a socket (its own spec replaces `SOCKET_FACTORY`). `test:ci` fails when coverage drops below the thresholds in `angular.json` (`coverageThresholds`).
+- Specs live next to the code (`*.spec.ts`), 200+ of them: services (auth expiry timers, backend status, stats history, theme, toasts, SEO, API calls), guards, the route table (redirects, guards, noindex), and the main components (login, greetings, portfolio, stream page keyboard control, alarms unsaved-changes flow). Write a spec for new logic; use `HttpTestingController` for HTTP, `vi.useFakeTimers()` / `vi.advanceTimersByTime()` for timers, `vi.fn()` / `vi.spyOn()` for spies (import `vi` from `vitest`), and stub `SocketService` (`{ connected: signal(true), emit, listen }`) instead of opening a socket (its own spec replaces `SOCKET_FACTORY`). `test:ci` fails when coverage drops below the thresholds in `angular.json` (`coverageThresholds`).
 - **Zoneless pitfall**: templates must read signals (or state changed by DOM events). A plain `FormControl.value` changed from code does not refresh the view; wrap it with `toSignal(control.valueChanges, ...)` (see `Greetings`).
 - `.github/workflows/ci.yml` is one pipeline: `verify` (npm ci, lint, `test:ci`, build with pre-rendering, `check:build`, 404.html fallback) and `deploy` (GitHub Pages) which `needs: [verify, e2e]` and runs only for pushes to `master`. Pull requests run `verify` only. Never deploy from another workflow.
 - End-to-end tests (`e2e/*.spec.ts`, config `playwright.config.ts`) drive the real UI in Chromium against the mock server: portfolio without backend, theme, login/logout, wrong password, 429, redirects, stats from the socket, alarm edit/save/discard, offline banner and recovery; `a11y.spec.ts` runs axe (WCAG 2.0/2.1 A and AA) on every page in both themes, on desktop and the `mobile` (Pixel 7) project, which also runs `*.mobile.spec.ts` (no horizontal scroll, bottom nav). New pages need an axe case. They change the mock's state, so they run serially and `e2e/fixtures.ts` resets the failure simulation around each test. Prefer role/label locators; the `.switch` checkbox is visually hidden, click its label. CI runs them as the `e2e` job; `deploy` needs both `verify` and `e2e`.

@@ -98,7 +98,14 @@
         gap: 12px;
     }
 
+    &__text {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
     &__photo {
+        grid-column: 2;
+        grid-row: 1;
         width: 300px;
         height: auto;
         border-radius: 20px;
@@ -115,7 +122,12 @@
             justify-content: center;
         }
 
+        &__text {
+            grid-row: 2;
+        }
+
         &__photo {
+            grid-column: 1;
             grid-row: 1;
             justify-self: center;
             width: 200px;
