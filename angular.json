@@ -3,7 +3,7 @@
     "version": 1,
     "newProjectRoot": "projects",
     "projects": {
-        "raspberry-ui": {
+        "The-Raspberry-SPY-frontend": {
             "projectType": "application",
             "schematics": {
                 "@schematics/angular:component": {
@@ -17,7 +17,7 @@
                 "build": {
                     "builder": "@angular/build:application",
                     "options": {
-                        "outputPath": "dist/raspberry-ui",
+                        "outputPath": "dist/The-Raspberry-SPY-frontend",
                         "index": "src/index.html",
                         "browser": "src/main.ts",
                         "tsConfig": "tsconfig.app.json",
@@ -85,13 +85,13 @@
                     "builder": "@angular/build:dev-server",
                     "configurations": {
                         "production": {
-                            "buildTarget": "raspberry-ui:build:production"
+                            "buildTarget": "The-Raspberry-SPY-frontend:build:production"
                         },
                         "development": {
-                            "buildTarget": "raspberry-ui:build:development"
+                            "buildTarget": "The-Raspberry-SPY-frontend:build:development"
                         },
                         "mock": {
-                            "buildTarget": "raspberry-ui:build:mock"
+                            "buildTarget": "The-Raspberry-SPY-frontend:build:mock"
                         }
                     },
                     "defaultConfiguration": "development"

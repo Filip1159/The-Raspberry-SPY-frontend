@@ -1,16 +1,18 @@
 <form class="greetings" [formGroup]="form" (ngSubmit)="send()">
-    <label class="greetings__title" for="greeting-text">Send me a greeting!</label>
-    <textarea
-        id="greeting-text"
-        class="field__input greetings__textarea"
-        rows="3"
-        placeholder="Let me know what you think. Or maybe who you are..."
-        [attr.maxlength]="maxLength"
-        [formControl]="form.controls.text"></textarea>
+    <div class="field">
+        <label class="field__label" for="greeting-text">Leave a greeting</label>
+        <textarea
+            id="greeting-text"
+            class="field__input greetings__textarea"
+            rows="3"
+            placeholder="Say hi, tell me what you think, or who you are"
+            [attr.maxlength]="maxLength"
+            [formControl]="form.controls.text"></textarea>
+    </div>
     <div class="greetings__footer">
-        <span class="greetings__counter" [class.greetings__counter--limit]="text().length >= maxLength"> {{ text().length }}/{{ maxLength }} </span>
+        <span class="greetings__counter" [class.greetings__counter--limit]="text().length >= maxLength"> {{ text().length }} / {{ maxLength }} </span>
         <button class="button" type="submit" [disabled]="text().trim() === '' || text().length > maxLength || sending() || backendStatus.isOffline()">
-            {{ sending() ? 'Sending...' : 'Send' }}
+            {{ sending() ? 'Sending…' : 'Send greeting' }}
             <fa-icon [icon]="faPaperPlane" size="sm" />
         </button>
     </div>

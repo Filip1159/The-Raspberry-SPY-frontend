@@ -1,20 +1,19 @@
 <header class="header">
-    <div class="header__banner">
-        <a class="header__logo" routerLink="/" aria-label="Back to the portfolio">
-            <img class="header__banner__img" src="raspberry-pi.svg" alt="" width="50" height="50" />
-        </a>
-        <p class="header__banner__name">Raspberry UI</p>
-    </div>
+    <a class="header__brand" routerLink="/">
+        <span class="header__brand__name">The Raspberry SPY</span>
+        <span class="header__brand__author">by Filip Wiśniewski</span>
+    </a>
     <nav class="header__tabs" aria-label="Main">
-        <a routerLink="/app/video" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page" class="header__tabs__tab">Live stream</a>
-        <a routerLink="/app/alarm" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page" class="header__tabs__tab">Alarm</a>
-        <a routerLink="/app/stats" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page" class="header__tabs__tab">Stats</a>
-        <a routerLink="/" class="header__tabs__tab">Portfolio</a>
+        <a routerLink="/app/video" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page">Live stream</a>
+        <a routerLink="/app/alarm" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page">Alarm</a>
+        <a routerLink="/app/stats" routerLinkActive="header__tabs__tab--active" ariaCurrentWhenActive="page">Stats</a>
+        <a routerLink="/">Portfolio</a>
     </nav>
-    <div class="header__icons">
+    <div class="header__actions">
         <theme-toggle />
-        <button class="header__logout" type="button" aria-label="Sign out" (click)="logout()">
-            <fa-icon [icon]="faArrowRightFromBracket" size="2x" />
+        <button class="button button--ghost button--small" type="button" aria-label="Sign out" (click)="logout()">
+            <fa-icon [icon]="faArrowRightFromBracket" />
+            <span class="header__signout">Sign out</span>
         </button>
     </div>
 </header>

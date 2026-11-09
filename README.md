@@ -25,7 +25,7 @@ npm run start:mock   # mock backend + UI on http://localhost:4200, login demo / 
 npm run lint
 npm run test:ci      # Vitest + coverage thresholds
 npm run e2e          # Playwright + axe against the mock backend (first time: npx playwright install chromium)
-npm run build        # production build with pre-rendering -> dist/raspberry-ui/browser
+npm run build        # production build with pre-rendering -> dist/The-Raspberry-SPY-frontend/browser
 npm run contract     # REST + Socket.IO contract checks (mock server, or a backend started with `python main.py --fake`)
 ```
 

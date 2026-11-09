@@ -3,7 +3,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-const dist = process.argv[2] ?? 'dist/raspberry-ui/browser'
+const dist = process.argv[2] ?? 'dist/The-Raspberry-SPY-frontend/browser'
 const problems = []
 const read = file => (existsSync(join(dist, file)) ? readFileSync(join(dist, file), 'utf8') : null)
 const expect = (condition, message) => condition || problems.push(message)
