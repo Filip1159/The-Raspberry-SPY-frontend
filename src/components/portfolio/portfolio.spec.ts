@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router'
 import { AuthService } from '../../service/auth.service'
 import { BackendStatusService } from '../../service/backend-status.service'
 import { Portfolio } from './portfolio'
+import { PROFILE_STATS } from './profile-stats'
 import { PROJECTS, SKILL_GROUPS } from './portfolio.data'
 
 describe('Portfolio', () => {
@@ -55,6 +56,14 @@ describe('Portfolio', () => {
         const external = Array.from(element().querySelectorAll<HTMLAnchorElement>('a[target=_blank]'))
         expect(external.length).toBeGreaterThan(5)
         expect(external.every(link => link.rel.includes('noopener'))).toBe(true)
+    })
+
+    it('shows the chess.com rating and the Duolingo streak on their cards', () => {
+        create(false)
+
+        const card = (name: string) => element().querySelector<HTMLElement>(`.contact__link[aria-label^="${name}"]`)!
+        expect(card('Chess.com').textContent).toContain(`Rapid ${PROFILE_STATS.chessRapidRating}`)
+        expect(card('Duolingo').textContent).toContain(`${PROFILE_STATS.duolingoStreak} day streak`)
     })
 
     it('offers to sign in to visitors', async () => {

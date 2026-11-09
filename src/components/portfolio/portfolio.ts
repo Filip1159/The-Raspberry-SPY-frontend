@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router'
 import { faChess } from '@fortawesome/free-solid-svg-icons'
 import { faDuolingo, faGithub, faLinkedinIn } from '@fortawesome/free-brands-svg-icons'
 import { AuthService } from '../../service/auth.service'
+import { PROFILE_STATS } from './profile-stats'
 import { PROJECTS, SKILL_GROUPS, SOCIAL_LINKS } from './portfolio.data'
 import { ThemeToggle } from '../theme-toggle/theme-toggle'
 import { RaspberrySpySection } from './raspberry-spy-section/raspberry-spy-section'
@@ -30,6 +31,7 @@ export class Portfolio {
     readonly projects = PROJECTS
     readonly skillGroups = SKILL_GROUPS
     readonly links = SOCIAL_LINKS
+    readonly stats = PROFILE_STATS
     readonly year = new Date().getFullYear()
 
     constructor() {

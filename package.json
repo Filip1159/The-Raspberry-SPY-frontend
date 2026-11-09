@@ -10,6 +10,7 @@
         "build": "ng build --configuration production",
         "watch": "ng build --watch --configuration development",
         "test": "ng test",
+        "stats": "node scripts/fetch-profile-stats.mjs",
         "check:build": "node scripts/check-build.mjs",
         "test:ci": "ng test --no-watch --coverage",
         "e2e": "playwright test",

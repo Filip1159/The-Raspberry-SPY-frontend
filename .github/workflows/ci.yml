@@ -5,6 +5,9 @@ on:
         branches: [master]
     pull_request:
         branches: [master]
+    # a daily run rebuilds and redeploys the site so that the chess.com / Duolingo numbers stay fresh
+    schedule:
+        - cron: '17 4 * * *'
     workflow_dispatch:
 
 permissions:
@@ -41,6 +44,10 @@ jobs:
                   name: coverage
                   path: coverage
                   if-no-files-found: ignore
+
+            # chess.com rating and Duolingo streak for the contact cards; keeps the committed numbers when an API is down
+            - name: Fetch profile stats
+              run: npm run stats
 
             - name: Build and pre-render
               run: npm run build -- --base-href /

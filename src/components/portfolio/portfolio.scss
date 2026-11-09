@@ -300,6 +300,13 @@ raspberry-spy-section {
         font-size: 2em;
     }
 
+    &__stat {
+        margin-top: -4px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+    }
+
     &__link {
         display: flex;
         flex-direction: column;

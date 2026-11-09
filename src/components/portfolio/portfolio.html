@@ -139,13 +139,25 @@
                 <app-icon class="contact__icon" [icon]="faGithub" />
                 <span>GitHub</span>
             </a>
-            <a class="contact__link" [href]="links.chess" target="_blank" rel="noopener" aria-label="Chess.com">
+            <a
+                class="contact__link"
+                [href]="links.chess"
+                target="_blank"
+                rel="noopener"
+                [attr.aria-label]="'Chess.com, rapid rating ' + stats.chessRapidRating">
                 <app-icon class="contact__icon" [icon]="faChess" />
                 <span>Chess.com</span>
+                <span class="contact__stat">Rapid {{ stats.chessRapidRating }}</span>
             </a>
-            <a class="contact__link" [href]="links.duolingo" target="_blank" rel="noopener" aria-label="Duolingo">
+            <a
+                class="contact__link"
+                [href]="links.duolingo"
+                target="_blank"
+                rel="noopener"
+                [attr.aria-label]="'Duolingo, ' + stats.duolingoStreak + ' day streak'">
                 <app-icon class="contact__icon" [icon]="faDuolingo" />
                 <span>Duolingo</span>
+                <span class="contact__stat">{{ stats.duolingoStreak }} day streak</span>
             </a>
         </div>
     </section>
