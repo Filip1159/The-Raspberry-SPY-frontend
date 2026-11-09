@@ -7,11 +7,12 @@ import { PROJECTS, SKILL_GROUPS, SOCIAL_LINKS } from './portfolio.data'
 import { ThemeToggle } from '../theme-toggle/theme-toggle'
 import { RaspberrySpySection } from './raspberry-spy-section/raspberry-spy-section'
 import { Icon } from '../icon/icon'
+import { ProjectGallery } from './project-gallery/project-gallery'
 
 @Component({
     selector: 'portfolio',
     standalone: true,
-    imports: [Icon, RouterLink, RaspberrySpySection, ThemeToggle],
+    imports: [Icon, ProjectGallery, RouterLink, RaspberrySpySection, ThemeToggle],
     templateUrl: './portfolio.html',
     styleUrl: './portfolio.scss',
 })

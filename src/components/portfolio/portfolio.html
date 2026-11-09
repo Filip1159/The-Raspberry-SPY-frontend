@@ -80,6 +80,9 @@
         <div class="projects">
             @for (project of projects; track project.name) {
             <article class="project">
+                @if (project.images) {
+                <project-gallery [images]="project.images" [name]="project.name" />
+                }
                 <h3 class="project__name">{{ project.name }}</h3>
                 <p class="project__description">{{ project.description }}</p>
                 <ul class="chips chips--small">

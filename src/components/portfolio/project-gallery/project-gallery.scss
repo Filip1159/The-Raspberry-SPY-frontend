@@ -1,0 +1,108 @@
+:host {
+    display: block;
+}
+
+.gallery {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface-2);
+
+    &__track {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    &__image {
+        flex: 0 0 100%;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 3 / 2;
+        object-fit: cover;
+        scroll-snap-align: center;
+
+        &--contain {
+            object-fit: contain;
+        }
+    }
+
+    &__arrow {
+        position: absolute;
+        top: 50%;
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        margin-top: -18px;
+        padding: 0;
+        font-size: 16px;
+        color: #fff;
+        background: rgb(0 0 0 / 55%);
+        border: 0;
+        border-radius: 50%;
+        cursor: pointer;
+
+        &:hover {
+            background: rgb(0 0 0 / 75%);
+        }
+
+        &--prev {
+            left: 8px;
+        }
+
+        &--next {
+            right: 8px;
+        }
+    }
+
+    &__dots {
+        position: absolute;
+        bottom: 8px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 2px;
+        pointer-events: none;
+    }
+
+    // a small dot with a 24 px tap target
+    &__dot {
+        position: relative;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        background: none;
+        border: 0;
+        cursor: pointer;
+        pointer-events: auto;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 8px;
+            height: 8px;
+            background: rgb(255 255 255 / 55%);
+            border-radius: 50%;
+            box-shadow: 0 0 2px rgb(0 0 0 / 60%);
+        }
+
+        &--active::after {
+            background: #fff;
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gallery__track {
+        scroll-behavior: auto;
+    }
+}

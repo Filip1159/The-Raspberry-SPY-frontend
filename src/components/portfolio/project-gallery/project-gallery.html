@@ -1,0 +1,37 @@
+<div class="gallery" role="group" aria-roledescription="carousel" [attr.aria-label]="name() + ' images'">
+    <div #track class="gallery__track" (scroll)="onScroll()">
+        @for (image of images(); track image.src; let i = $index) {
+        <img
+            class="gallery__image"
+            [class.gallery__image--contain]="image.fit === 'contain'"
+            [src]="image.src"
+            [alt]="image.alt"
+            width="900"
+            height="600"
+            loading="lazy"
+            decoding="async"
+            role="group"
+            aria-roledescription="slide"
+            [attr.aria-label]="i + 1 + ' of ' + images().length" />
+        }
+    </div>
+    @if (images().length > 1) {
+    <button class="gallery__arrow gallery__arrow--prev" type="button" [attr.aria-label]="'Previous image of ' + name()" (click)="step(-1)">
+        <app-icon [icon]="faChevronLeft" />
+    </button>
+    <button class="gallery__arrow gallery__arrow--next" type="button" [attr.aria-label]="'Next image of ' + name()" (click)="step(1)">
+        <app-icon [icon]="faChevronRight" />
+    </button>
+    <div class="gallery__dots">
+        @for (image of images(); track image.src; let i = $index) {
+        <button
+            class="gallery__dot"
+            type="button"
+            [class.gallery__dot--active]="i === current()"
+            [attr.aria-label]="'Show image ' + (i + 1) + ' of ' + name()"
+            [attr.aria-current]="i === current() ? 'true' : null"
+            (click)="show(i)"></button>
+        }
+    </div>
+    }
+</div>
