@@ -13,6 +13,7 @@ const hlsMock = vi.hoisted(() => {
         attachMedia = vi.fn()
         destroy = vi.fn()
         recoverMediaError = vi.fn()
+        latency = Number.NaN
         on = (event: string, handler: Handler) => (state.handlers[event] = handler)
         constructor(config: Record<string, unknown>) {
             state.config = config
@@ -151,6 +152,17 @@ describe('playWithHls', () => {
 
         fail({ fatal: true, type: 'mediaError' })
         expect(onFatalError).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports how far it is behind the live edge', async () => {
+        const playback = await start()
+        expect(playback?.latency()).toBeNull()
+
+        instance().latency = 2.34
+        expect(playback?.latency()).toBe(2.34)
+
+        instance().latency = -1
+        expect(playback?.latency()).toBeNull()
     })
 
     it('can be stopped', async () => {

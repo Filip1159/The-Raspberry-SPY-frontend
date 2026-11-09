@@ -29,6 +29,7 @@ const KEY_REPEAT_MS = 100
 const STREAM_RESTART_MS = 4000
 // A hidden tab keeps the (on-demand) camera running for nobody: stop after this long, so a quick look at another tab costs nothing
 const HIDDEN_STOP_MS = 30_000
+const STATS_INTERVAL_MS = 1000
 
 @Component({
     selector: 'app-video-stream',
@@ -60,6 +61,9 @@ export class VideoStream implements OnDestroy {
     /** True while a live stream has run out of data and waits for more (HLS stall) */
     buffering = signal(false)
     brightness = 0
+    /** Seconds behind the live edge while hls.js plays (the browser's own player does not tell), null otherwise */
+    latency = signal<number | null>(null)
+    droppedFrames = signal(0)
 
     /** The steering needs the websocket, which exists only while the Raspberry is reachable */
     canControl = computed(() => this.socket.connected() && !this.backendStatus.isOffline())
@@ -71,6 +75,7 @@ export class VideoStream implements OnDestroy {
     private lastKeyMove = 0
     private restartTimer: ReturnType<typeof setTimeout> | null = null
     private hiddenTimer: ReturnType<typeof setTimeout> | null = null
+    private statsTimer: ReturnType<typeof setInterval> | null = null
     /** The stream was stopped because the tab was hidden, so it starts again when the tab is shown */
     private resumeWhenVisible = false
 
@@ -95,6 +100,7 @@ export class VideoStream implements OnDestroy {
         video.onplaying = () => {
             this.buffering.set(false)
             this.state.set('live')
+            this.startStats(video)
         }
         video.onwaiting = () => this.buffering.set(this.state() === 'live')
 
@@ -256,7 +262,25 @@ export class VideoStream implements OnDestroy {
         this.hiddenTimer = null
     }
 
+    private startStats(video: HTMLVideoElement): void {
+        this.stopStats()
+        const update = () => {
+            this.latency.set(this.hls?.latency() ?? null)
+            this.droppedFrames.set(video.getVideoPlaybackQuality?.().droppedVideoFrames ?? 0)
+        }
+        update()
+        this.statsTimer = setInterval(update, STATS_INTERVAL_MS)
+    }
+
+    private stopStats(): void {
+        if (this.statsTimer) clearInterval(this.statsTimer)
+        this.statsTimer = null
+        this.latency.set(null)
+        this.droppedFrames.set(0)
+    }
+
     private stopHls(): void {
+        this.stopStats()
         this.hls?.destroy()
         this.hls = null
     }

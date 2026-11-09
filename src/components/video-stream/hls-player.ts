@@ -11,6 +11,8 @@ export function withToken(url: string, token: string | null): string {
 
 export interface HlsPlayback {
     destroy(): void
+    /** Seconds the player is behind the live edge of the playlist (the camera and encoder add a little more), null while unknown */
+    latency(): number | null
 }
 
 interface Options {
@@ -73,5 +75,8 @@ export async function playWithHls({ video, url, token, onFallback, onFatalError 
 
     hls.loadSource(withToken(url, token()))
     hls.attachMedia(video)
-    return { destroy: () => hls.destroy() }
+    return {
+        destroy: () => hls.destroy(),
+        latency: () => (Number.isFinite(hls.latency) && hls.latency >= 0 ? hls.latency : null),
+    }
 }

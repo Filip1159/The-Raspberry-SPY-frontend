@@ -21,6 +21,7 @@ const hlsMock = vi.hoisted(() => {
         attachMedia = vi.fn()
         destroy = vi.fn()
         recoverMediaError = vi.fn()
+        latency = Number.NaN
         on = (event: string, handler: (event: string, data: unknown) => void) => {
             if (event === 'error') state.onError = data => handler('error', data)
         }
@@ -391,6 +392,65 @@ describe('VideoStream', () => {
 
             expect(instances()[0].destroy).toHaveBeenCalled()
             expect(component.state()).toBe('off')
+        })
+    })
+
+    describe('latency display', () => {
+        const video = () => fixture.nativeElement.querySelector('video') as HTMLVideoElement
+        const chip = () => fixture.nativeElement.querySelector('.stream__stats') as HTMLElement | null
+
+        beforeEach(() => {
+            vi.useFakeTimers()
+            hlsMock.state.instances = []
+            hlsMock.state.supported = true
+        })
+        afterEach(() => vi.useRealTimers())
+
+        it('shows how far behind live the stream is, updated every second', async () => {
+            await component.cameraOn()
+            hlsMock.state.instances[0].latency = 2.34
+            video().onplaying?.(new Event('playing'))
+            fixture.detectChanges()
+            expect(chip()?.textContent).toContain('2.3 s behind live')
+
+            hlsMock.state.instances[0].latency = 1.6
+            await vi.advanceTimersByTimeAsync(1000)
+            fixture.detectChanges()
+            expect(chip()?.textContent).toContain('1.6 s behind live')
+            expect(chip()?.textContent).not.toContain('dropped')
+        })
+
+        it('counts dropped frames once there are some', async () => {
+            video().getVideoPlaybackQuality = () => ({ droppedVideoFrames: 4 }) as VideoPlaybackQuality
+            await component.cameraOn()
+            hlsMock.state.instances[0].latency = 2
+            video().onplaying?.(new Event('playing'))
+            fixture.detectChanges()
+
+            expect(chip()?.textContent).toContain('4 dropped')
+        })
+
+        it('shows nothing where the browser plays the stream itself', async () => {
+            hlsMock.state.supported = false
+            await component.cameraOn()
+            video().onplaying?.(new Event('playing'))
+            fixture.detectChanges()
+
+            expect(component.state()).toBe('live')
+            expect(chip()).toBeNull()
+        })
+
+        it('stops measuring when the camera is turned off', async () => {
+            await component.cameraOn()
+            hlsMock.state.instances[0].latency = 2
+            video().onplaying?.(new Event('playing'))
+
+            component.cameraOff()
+            fixture.detectChanges()
+
+            expect(component.latency()).toBeNull()
+            expect(chip()).toBeNull()
+            expect(vi.getTimerCount()).toBe(0)
         })
     })
 

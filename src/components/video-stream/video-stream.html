@@ -36,7 +36,11 @@
             </div>
             } @case ('live') {
             <span class="stream__live"><span class="stream__live__dot"></span> LIVE</span>
-            @if (buffering()) {
+            @if (latency() !== null) {
+            <span class="stream__stats" aria-hidden="true" title="Measured at the live edge of the playlist; camera and encoder add a little more">
+                {{ latency()!.toFixed(1) }} s behind live @if (droppedFrames() > 0) { · {{ droppedFrames() }} dropped }
+            </span>
+            } @if (buffering()) {
             <div class="stream__overlay stream__overlay--buffering" role="status">
                 <div class="spinner"></div>
                 <p>Buffering...</p>
